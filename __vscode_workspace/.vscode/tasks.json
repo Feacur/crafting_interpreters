@@ -1,0 +1,26 @@
+{
+	"version": "2.0.0",
+	"presentation": {
+		"reveal": "never",
+		"panel": "shared",
+		"showReuseMessage": false,
+		"clear": true,
+		"revealProblems": "onProblem",
+	},
+	"options": {"cwd": "../project"},
+	"tasks": [
+		{
+			"label": "build",
+			"group": "build",
+			"type": "process",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"interpreter.csproj",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"problemMatcher":"$msCompile",
+		}
+	]
+}

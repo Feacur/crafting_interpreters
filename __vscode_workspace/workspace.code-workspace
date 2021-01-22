@@ -1,0 +1,28 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../code"
+		},
+		{
+			"path": "../project"
+		},
+		{
+			"path": "../bin"
+		}
+	],
+	"settings": {
+		// editor
+		"editor.tabSize": 4,
+		"editor.insertSpaces": false,
+		"editor.detectIndentation": false,
+	},
+	"extensions": {
+		"recommendations": [
+			// c#
+			"ms-dotnettools.csharp",
+		]
+	}
+}

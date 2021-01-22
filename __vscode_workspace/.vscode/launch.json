@@ -1,0 +1,15 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Launch",
+			"request": "launch",
+			"program": "bin/interpreter.exe",
+			"args": [],
+			"cwd": "${workspaceFolder}/..",
+			"stopAtEntry": false,
+			"externalConsole": true,
+			"type": "coreclr",
+		}
+	]
+}
