@@ -113,8 +113,8 @@ public class Scanner
 
 		Advance(); // consume closing quote
 
-		string lexeme = source.Substring(start + 1, current - start - 2);
-		AddToken(TokenType.STRING, lexeme);
+		string literal = source.Substring(start + 1, current - start - 2);
+		AddToken(TokenType.STRING, literal);
 	}
 
 	private void AddNumber()
@@ -126,7 +126,9 @@ public class Scanner
 			while (IsDigit(Peek())) { Advance(); }
 		}
 
-		AddToken(TokenType.NUMBER, double.Parse(source.Substring(start, current - start)));
+		string literalString = source.Substring(start, current - start);
+		double literal = double.Parse(literalString);
+		AddToken(TokenType.NUMBER, literal);
 	}
 
 	private void AddIdentifier()
