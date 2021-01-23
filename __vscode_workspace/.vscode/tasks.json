@@ -10,13 +10,26 @@
 	"options": {"cwd": "../project"},
 	"tasks": [
 		{
-			"label": "build",
+			"label": "Build interpreter",
 			"group": "build",
 			"type": "process",
 			"command": "dotnet",
 			"args": [
 				"build",
 				"interpreter.csproj",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"problemMatcher":"$msCompile",
+		},
+		{
+			"label": "Build ast_generator",
+			"group": "build",
+			"type": "process",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"ast_generator.csproj",
 				"/property:GenerateFullPaths=true",
 				"/consoleloggerparameters:NoSummary"
 			],

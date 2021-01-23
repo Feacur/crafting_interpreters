@@ -2,9 +2,19 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Launch",
+			"name": "Launch interpreter",
 			"request": "launch",
 			"program": "bin/interpreter.exe",
+			"args": [],
+			"cwd": "${workspaceFolder}/..",
+			"stopAtEntry": false,
+			"externalConsole": true,
+			"type": "coreclr",
+		},
+		{
+			"name": "Launch ast_generator",
+			"request": "launch",
+			"program": "bin/ast_generator.exe",
 			"args": [],
 			"cwd": "${workspaceFolder}/..",
 			"stopAtEntry": false,
