@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -29,26 +28,27 @@ class Lox
 		}
 
 		if (args.Length > 1) {
-			Console.WriteLine("usage: interpreter [script]");
-			Environment.Exit(1); return;
+			System.Console.WriteLine("usage: interpreter [script]");
+			System.Environment.Exit(1); return;
 		}
 
 		RunFile(args[0]);
+		System.Console.Read();
 	}
 
 	private static void RunFile(string path)
 	{
 		string source = File.ReadAllText(path, Encoding.Default);
 		RunSource(source);
-		if (hadError) { Environment.Exit(2); return; }
-		if (hadRuntimeError) { Environment.Exit(3); return; }
+		if (hadError) { System.Environment.Exit(2); return; }
+		if (hadRuntimeError) { System.Environment.Exit(3); return; }
 	}
 
 	private static void RunPrompt()
 	{
 		for (;;) {
-			Console.Write("> ");
-			string line = Console.ReadLine();
+			System.Console.Write("> ");
+			string line = System.Console.ReadLine();
 			if (line == null) { break; }
 			RunSource(line);
 			hadError = false;
@@ -61,18 +61,22 @@ class Lox
 		Scanner scanner = new Scanner(source);
 		List<Token> tokens = scanner.ScanTokens();
 
-		// foreach (Token token in tokens)
-		// {
+		// foreach (Token token in tokens) {
 		// 	Console.WriteLine(token);
 		// }
 
 		Parser parser = new Parser(tokens);
-		Expr expression = parser.Parse();
+		List<Stmt> statements = parser.Parse();
 
 		if (hadError) { return; }
 
-		// Console.WriteLine(new AstPrinter().Print(expression));
-		interpreter.Interpret(expression);
+		// {
+		// 	AstPrinter printer = new AstPrinter();
+		// 	foreach (Stmt statement in statements) {
+		// 		Console.WriteLine(printer.Print(statement));
+		// 	}
+		// }
+		interpreter.Interpret(statements);
 	}
 
 	public static void Error(int line, string message) => Report(line, string.Empty, message);
@@ -95,7 +99,7 @@ class Lox
 
 	public static void RuntimeError(Token token, string message)
 	{
-		Console.WriteLine(message + "\n[line " + token.line + "]");
+		System.Console.WriteLine(message + "\n[line " + token.line + "]");
 		hadRuntimeError = true;
 	}
 }

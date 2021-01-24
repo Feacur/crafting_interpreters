@@ -11,16 +11,13 @@ public class Parser
 		this.tokens = tokens;
 	}
 
-	public Expr Parse()
+	public List<Stmt> Parse()
 	{
-		try
-		{
-			return DoExpression();
+		List<Stmt> statements = new List<Stmt>();
+		while (!IsAtEnd()) {
+			statements.Add(DoStatement());
 		}
-		catch (ParseErrorException)
-		{
-			return null;
-		}
+		return statements;
 	}
 
 	private class ParseErrorException : System.Exception
@@ -28,8 +25,81 @@ public class Parser
 		public ParseErrorException(string message) : base(message) { }
 	}
 
-	// rules
-	private Expr DoExpression() => DoEquality();
+	// statement rules
+	private Stmt DoStatement()
+	{
+		try {
+			if (Match(TokenType.VAR)) { return DoVarStatement(); }
+			if (Match(TokenType.PRINT)) { return DoPrintStatement(); }
+			if (Match(TokenType.LEFT_BRACE)) { return DoBlockStatement(); }
+			return DoExpressionStatement();
+		}
+		catch (ParseErrorException) {
+			Synchronize();
+			return null;
+		}
+	}
+
+	private Stmt DoVarStatement()
+	{
+		Token name = Consume(TokenType.IDENTIFIER, "expected a variable name");
+
+		Expr initializer = null;
+		if (Match(TokenType.EQUAL)) {
+			initializer = DoExpression();
+		}
+
+		Consume(TokenType.SEMICOLON, "expected a ';'");
+		return new Stmt.Var(name, initializer);
+	}
+
+	private Stmt DoPrintStatement()
+	{
+		Expr expr = DoExpression();
+		Consume(TokenType.SEMICOLON, "expected a ';'");
+		return new Stmt.Print(expr);
+	}
+
+	private Stmt DoBlockStatement() => new Stmt.Block(DoBlock());
+
+	private List<Stmt> DoBlock()
+	{
+		List<Stmt> statements = new List<Stmt>();
+		while (!IsAtEnd() && Peek().type != TokenType.RIGHT_BRACE) {
+			statements.Add(DoStatement());
+		}
+		Consume(TokenType.RIGHT_BRACE, "expected a '}'");
+		return statements;
+	}
+
+	private Stmt DoExpressionStatement()
+	{
+		Expr expr = DoExpression();
+		Consume(TokenType.SEMICOLON, "expected a ';'");
+		return new Stmt.Expression(expr);
+	}
+
+	// expression rules
+	private Expr DoExpression() => DoAssignment();
+
+	private Expr DoAssignment()
+	{
+		Expr expr = DoEquality();
+
+		if (Match(TokenType.EQUAL)) {
+			Token equals = PeekPrev();
+			Expr value = DoAssignment();
+
+			if (expr is Expr.Variable) {
+				Token name = ((Expr.Variable)expr).name;
+				return new Expr.Assign(name, value);
+			}
+
+			Error(equals, "invalid assignment target");
+		}
+
+		return expr;
+	}
 
 	private Expr DoEquality() => DoBinary(DoComparison, TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL);
 
@@ -71,6 +141,10 @@ public class Parser
 			return new Expr.Literal(PeekPrev().literal);
 		}
 
+		if (Match(TokenType.IDENTIFIER)) {
+			return new Expr.Variable(PeekPrev());
+		}
+
 		if (Match(TokenType.LEFT_PAREN)) {
 			Expr expr = DoExpression();
 			Consume(TokenType.RIGHT_PAREN, "expected ')' after expression");
@@ -81,9 +155,9 @@ public class Parser
 	}
 
 	// recovery
-	private void Consume(TokenType type, string message)
+	private Token Consume(TokenType type, string message)
 	{
-		if (Peek().type == type) { Advance(); return; }
+		if (Peek().type == type) { return Advance(); }
 		throw Error(Peek(), message);
 	}
 
@@ -132,5 +206,5 @@ public class Parser
 
 	private Token Advance() => tokens[current++];
 
-	private bool IsAtEnd() => Peek().type == TokenType.EOF;
+	private bool IsAtEnd() => (current >= tokens.Count) || (Peek().type == TokenType.EOF);
 }

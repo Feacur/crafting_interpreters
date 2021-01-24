@@ -1,26 +1,38 @@
-public class AstInterpreter : Expr.IVisitor<object>
+using System.Collections.Generic;
+using Void = System.Object; // should be 'void', but C# doesn't allow generics to use that
+
+public class AstInterpreter
+	: Expr.IVisitor<object>
+	, Stmt.IVisitor<Void>
 {
-	public void Interpret(Expr expression)
+	private Environment environment = new Environment();
+
+	public void Interpret(List<Stmt> statements)
 	{
-		try
-		{
-			object value = Evaluate(expression);
-			System.Console.WriteLine(Stringify(value));
+		try {
+			foreach (Stmt statement in statements) {
+				Execute(statement);
+			}
 		}
-		catch (RuntimeErrorException e)
-		{
+		catch (RuntimeErrorException e) {
 			Lox.RuntimeError(e.token, e.Message);
 		}
 	}
 
 	private object Evaluate(Expr expr) => expr.Accept(this);
+	private void Execute(Stmt stmt) => stmt.Accept(this);
 
-	private class RuntimeErrorException : System.Exception
+	private void ExecuteBlock(List<Stmt> statements, Environment environment)
 	{
-		public Token token;
-
-		public RuntimeErrorException(Token token, string message) : base(message) {
-			this.token = token;
+		Environment previous = this.environment;
+		try {
+			this.environment = environment;
+			foreach (var statement in statements) {
+				Execute(statement);
+			}
+		}
+		finally {
+			this.environment = previous;
 		}
 	}
 
@@ -28,16 +40,23 @@ public class AstInterpreter : Expr.IVisitor<object>
 	private void CheckNumberOperand(Token token, object value)
 	{
 		if (value is double) { return; }
-		throw new RuntimeErrorException(token, "value must be a number");
+		throw new RuntimeErrorException(token, "expected a number");
 	}
 
 	private void CheckNumberOperands(Token token, object left, object right)
 	{
 		if (left is double && right is double) { return; }
-		throw new RuntimeErrorException(token, "values must be numbers");
+		throw new RuntimeErrorException(token, "expected numbers");
 	}
 
 	// Expr.IVisitor<object>
+	object Expr.IVisitor<object>.VisitAssignExpr(Expr.Assign expr)
+	{
+		object value = Evaluate(expr.value);
+		environment.Assign(expr.name, value);
+		return value;
+	}
+
 	object Expr.IVisitor<object>.VisitBinaryExpr(Expr.Binary expr)
 	{
 		object left = Evaluate(expr.left);
@@ -82,6 +101,41 @@ public class AstInterpreter : Expr.IVisitor<object>
 		}
 		Lox.RuntimeError(expr.token, "wrong unary expression");
 		return null;
+	}
+
+	object Expr.IVisitor<object>.VisitVariableExpr(Expr.Variable expr)
+	{
+		return environment.Get(expr.name);
+	}
+
+	// Stmt.IVisitor<string>
+	Void Stmt.IVisitor<Void>.VisitBlockStmt(Stmt.Block stmt)
+	{
+		ExecuteBlock(stmt.statements, new Environment(environment));
+		return default;
+	}
+
+	Void Stmt.IVisitor<Void>.VisitExpressionStmt(Stmt.Expression stmt)
+	{
+		Evaluate(stmt.expression);
+		return default;
+	}
+
+	Void Stmt.IVisitor<Void>.VisitPrintStmt(Stmt.Print stmt)
+	{
+		object value = Evaluate(stmt.expression);
+		System.Console.WriteLine(Stringify(value));
+		return default;
+	}
+
+	Void Stmt.IVisitor<Void>.VisitVarStmt(Stmt.Var stmt)
+	{
+		object value = null;
+		if (stmt.initializer != null) {
+			value = Evaluate(stmt.initializer);
+		}
+		environment.Define(stmt.name.lexeme, value);
+		return default;
 	}
 
 	// data
