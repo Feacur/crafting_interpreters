@@ -5,7 +5,10 @@ using System.Text;
 
 class Lox
 {
-	private static bool hadError;
+	private static bool hadError = false;
+	private static bool hadRuntimeError = false;
+
+	private static AstInterpreter interpreter = new AstInterpreter();
 
 	static void Main(string[] args)
 	{
@@ -38,6 +41,7 @@ class Lox
 		string source = File.ReadAllText(path, Encoding.Default);
 		RunSource(source);
 		if (hadError) { Environment.Exit(2); return; }
+		if (hadRuntimeError) { Environment.Exit(3); return; }
 	}
 
 	private static void RunPrompt()
@@ -67,7 +71,8 @@ class Lox
 
 		if (hadError) { return; }
 
-		Console.WriteLine(new AstPrinter().Print(expression));
+		// Console.WriteLine(new AstPrinter().Print(expression));
+		interpreter.Interpret(expression);
 	}
 
 	public static void Error(int line, string message) => Report(line, string.Empty, message);
@@ -86,5 +91,11 @@ class Lox
 	{
 		System.Console.WriteLine("[line " + line + "] Error" + where + ": " + message);
 		hadError = true;
+	}
+
+	public static void RuntimeError(Token token, string message)
+	{
+		Console.WriteLine(message + "\n[line " + token.line + "]");
+		hadRuntimeError = true;
 	}
 }
