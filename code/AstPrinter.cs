@@ -16,6 +16,7 @@ public class AstPrinter : Expr.IVisitor<string>
 		return builder.ToString();
 	}
 
+	// Expr.IVisitor<string>
 	string Expr.IVisitor<string>.VisitBinaryExpr(Expr.Binary expr)
 	{
 		return Parenthesize(expr.token.lexeme, expr.left, expr.right);

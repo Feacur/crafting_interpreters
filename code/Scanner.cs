@@ -75,30 +75,7 @@ public class Scanner
 		}
 	}
 
-	private bool Match(char expected)
-	{
-		if (IsAtEnd()) { return false; }
-		if (source[current] != expected) { return false; }
-		current++; return true;
-	}
-
-	private char Peek()
-	{
-		if (IsAtEnd()) { return '\0'; }
-		return source[current];
-	}
-
-	private char PeekNext()
-	{
-		if (current + 1 >= source.Length) { return '\0'; }
-		return source[current + 1];
-	}
-
-	private char Advance()
-	{
-		return source[current++];
-	}
-
+	// tokenizers
 	private void AddString()
 	{
 		while (Peek() != '"' && !IsAtEnd()) {
@@ -151,8 +128,28 @@ public class Scanner
 		tokens.Add(new Token(type, lexeme, literal, line));
 	}
 
+	// primitives
+	private bool Match(char expected)
+	{
+		if (IsAtEnd()) { return false; }
+		if (source[current] == expected) { current++; return true; }
+		return false;
+	}
+
+	private char Peek() => IsAtEnd() ? '\0' : source[current];
+
+	private char PeekNext()
+	{
+		int index = current + 1;
+		if (index >= source.Length) { return '\0'; }
+		return source[index];
+	}
+
+	private char Advance() => source[current++];
+
 	private bool IsAtEnd() => current >= source.Length;
 
+	// data
 	private static bool IsDigit(char c) => '0' <= c && c <= '9';
 
 	private static bool IsAlpha(char c) => 'a' <= c && c <= 'z'
@@ -162,21 +159,21 @@ public class Scanner
 	private static bool IsAlphaNumeric(char c) => IsAlpha(c) || IsDigit(c);
 
 	private static Dictionary<string, TokenType> keywords = new Dictionary<string, TokenType> {
-		{"and", TokenType.AND},
-		{"class", TokenType.CLASS},
-		{"else", TokenType.ELSE},
-		{"false", TokenType.FALSE},
-		{"for", TokenType.FOR},
-		{"fun", TokenType.FUN},
-		{"if", TokenType.IF},
-		{"nil", TokenType.NIL},
-		{"or", TokenType.OR},
-		{"print", TokenType.PRINT},
+		{"and",    TokenType.AND},
+		{"class",  TokenType.CLASS},
+		{"else",   TokenType.ELSE},
+		{"false",  TokenType.FALSE},
+		{"for",    TokenType.FOR},
+		{"fun",    TokenType.FUN},
+		{"if",     TokenType.IF},
+		{"nil",    TokenType.NIL},
+		{"or",     TokenType.OR},
+		{"print",  TokenType.PRINT},
 		{"return", TokenType.RETURN},
-		{"super", TokenType.SUPER},
-		{"this", TokenType.THIS},
-		{"true", TokenType.TRUE},
-		{"var", TokenType.VAR},
-		{"while", TokenType.WHILE},
+		{"super",  TokenType.SUPER},
+		{"this",   TokenType.THIS},
+		{"true",   TokenType.TRUE},
+		{"var",    TokenType.VAR},
+		{"while",  TokenType.WHILE},
 	};
 }
