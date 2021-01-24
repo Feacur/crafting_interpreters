@@ -2,8 +2,8 @@ using System.Collections.Generic;
 
 public class Scanner
 {
-	private string source;
-	private List<Token> tokens = new List<Token>();
+	private readonly string source;
+	private readonly List<Token> tokens = new List<Token>();
 	private int start = 0;
 	private int current = 0;
 	private int line = 0;

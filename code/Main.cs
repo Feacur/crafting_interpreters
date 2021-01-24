@@ -8,7 +8,7 @@ class Lox
 	private static bool hadError = false;
 	private static bool hadRuntimeError = false;
 
-	private static AstInterpreter interpreter = new AstInterpreter();
+	private static readonly AstInterpreter interpreter = new AstInterpreter();
 
 	static void Main(string[] args)
 	{
