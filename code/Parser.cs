@@ -30,7 +30,10 @@ public class Parser
 	{
 		try {
 			if (Match(TokenType.VAR)) { return DoVarStatement(); }
+			if (Match(TokenType.FOR)) { return DoForStatement(); }
+			if (Match(TokenType.IF)) { return DoIfStatement(); }
 			if (Match(TokenType.PRINT)) { return DoPrintStatement(); }
+			if (Match(TokenType.WHILE)) { return DoWhileStatement(); }
 			if (Match(TokenType.LEFT_BRACE)) { return DoBlockStatement(); }
 			return DoExpressionStatement();
 		}
@@ -51,6 +54,94 @@ public class Parser
 
 		Consume(TokenType.SEMICOLON, "expected a ';'");
 		return new Stmt.Var(name, initializer);
+	}
+
+	private Stmt DoWhileStatement()
+	{
+		Consume(TokenType.LEFT_PAREN, "expected a '('");
+		Expr condition = DoExpression();
+		Consume(TokenType.RIGHT_PAREN, "expected a ')'");
+
+		Stmt body = DoStatement();
+
+		return new Stmt.While(condition, body);
+	}
+
+	private Stmt DoForStatement()
+	{
+		/*
+		for (initializer; condition; expression) {
+			body;
+		}
+		==
+		{
+			initializer;
+			while (condition) {
+				body;
+				expression;
+			}
+		}
+		*/
+		Consume(TokenType.LEFT_PAREN, "expected a '('");
+
+		Stmt initializer;
+		if (Match(TokenType.SEMICOLON)) {
+			initializer = null;
+		}
+		else if (Match(TokenType.VAR)) {
+			initializer = DoVarStatement();
+		}
+		else {
+			initializer = DoExpressionStatement();
+		}
+
+		Expr condition = null;
+		if (!IsAtEnd() && Peek().type != TokenType.SEMICOLON) {
+			condition = DoExpression();
+		}
+		Consume(TokenType.SEMICOLON, "expected a ';'");
+
+		Expr expression = null;
+		if (!IsAtEnd() && Peek().type != TokenType.SEMICOLON) {
+			expression = DoExpression();
+		}
+
+		Consume(TokenType.RIGHT_PAREN, "expected a ')'");
+
+		Stmt body = DoStatement();
+
+		if (expression != null) {
+			body = new Stmt.Block(new List<Stmt> {
+				body, new Stmt.Expression(expression)
+			});
+		}
+
+		if (condition == null) { condition = new Expr.Literal(true); }
+		body = new Stmt.While(condition, body);
+
+		if (initializer != null) {
+			body = new Stmt.Block(new List<Stmt> {
+				initializer, body
+			});
+		}
+
+		return body;
+	}
+
+	private Stmt DoIfStatement()
+	{
+		Consume(TokenType.LEFT_PAREN, "expected a '('");
+		Expr condition = DoExpression();
+		Consume(TokenType.RIGHT_PAREN, "expected a ')'");
+
+		Stmt thenBranch = DoStatement();
+
+		Stmt elseBranch = null;
+		if (Match(TokenType.ELSE)) {
+			elseBranch = DoStatement();
+		}
+
+		return new Stmt.If(condition, thenBranch, elseBranch);
 	}
 
 	private Stmt DoPrintStatement()
@@ -84,7 +175,7 @@ public class Parser
 
 	private Expr DoAssignment()
 	{
-		Expr expr = DoEquality();
+		Expr expr = DoOr();
 
 		if (Match(TokenType.EQUAL)) {
 			Token equals = PeekPrev();
@@ -95,9 +186,25 @@ public class Parser
 				return new Expr.Assign(name, value);
 			}
 
-			Error(equals, "invalid assignment target");
+			Error(equals, "invalid assignment target"); // no throw
 		}
 
+		return expr;
+	}
+
+	private Expr DoOr() => DoLogical(DoAnd, TokenType.OR);
+
+	private Expr DoAnd() => DoLogical(DoEquality, TokenType.AND);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private Expr DoLogical(System.Func<Expr> rule, params TokenType[] types)
+	{
+		Expr expr = rule.Invoke();
+		while (Match(types)) {
+			Token token = PeekPrev();
+			Expr right = rule.Invoke();
+			expr = new Expr.Logical(expr, token, right);
+		}
 		return expr;
 	}
 

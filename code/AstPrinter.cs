@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 public class AstPrinter
@@ -7,22 +9,34 @@ public class AstPrinter
 	public string Print(Expr expr) => expr.Accept(this);
 	public string Print(Stmt stmt) => stmt.Accept(this);
 
-	private string Parenthesize(string name, params Expr[] exprs)
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private string Parenthesize(params object[] values)
 	{
 		StringBuilder builder = new StringBuilder();
-		builder.Append("(").Append(name);
-		foreach (Expr expr in exprs)
-		{
-			builder.Append(" ").Append(Print(expr));
+		builder.Append("(");
+		foreach (object value in values) {
+			AppendBuilder(builder, value);
 		}
 		builder.Append(")");
 		return builder.ToString();
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void AppendBuilder(StringBuilder builder, object value)
+	{
+		if (value is Expr) { builder.Append(Print((Expr)value)); return; }
+		if (value is Stmt) { builder.Append(Print((Stmt)value)); return; }
+		if (value is Token) { builder.Append(((Token)value).lexeme); return; }
+		if (value is ICollection) { foreach (object it in (ICollection)value) {
+			AppendBuilder(builder, it);
+		} return; }
+		builder.Append(value);
+	}
+
 	// Expr.IVisitor<string>
 	string Expr.IVisitor<string>.VisitAssignExpr(Expr.Assign expr)
 	{
-		return "(= " + expr.name.lexeme + " " + Print(expr.value) + ")";
+		return Parenthesize("=", expr.name, expr.value);
 	}
 
 	string Expr.IVisitor<string>.VisitBinaryExpr(Expr.Binary expr)
@@ -41,6 +55,11 @@ public class AstPrinter
 		return expr.value.ToString();
 	}
 
+	string Expr.IVisitor<string>.VisitLogicalExpr(Expr.Logical expr)
+	{
+		return Parenthesize(expr.op.lexeme, expr.left, expr.right);
+	}
+
 	string Expr.IVisitor<string>.VisitUnaryExpr(Expr.Unary expr)
 	{
 		return Parenthesize(expr.op.lexeme, expr.right);
@@ -54,19 +73,20 @@ public class AstPrinter
 	// Stmt.IVisitor<string>
 	string Stmt.IVisitor<string>.VisitBlockStmt(Stmt.Block stmt)
 	{
-		StringBuilder builder = new StringBuilder();
-		builder.Append("(block ");
-		foreach (Stmt statement in stmt.statements)
-		{
-			builder.Append(Print(statement));
-		}
-		builder.Append(")");
-		return builder.ToString();
+		return Parenthesize("block", stmt.statements);
 	}
 
 	string Stmt.IVisitor<string>.VisitExpressionStmt(Stmt.Expression stmt)
 	{
 		return Parenthesize(";", stmt.expression);
+	}
+
+	string Stmt.IVisitor<string>.VisitIfStmt(Stmt.If stmt)
+	{
+		if (stmt.elseBranch == null) {
+			return Parenthesize("if", stmt.condition, stmt.thenBranch);
+		}
+		return Parenthesize("if", stmt.condition, stmt.thenBranch, stmt.elseBranch);
 	}
 
 	string Stmt.IVisitor<string>.VisitPrintStmt(Stmt.Print stmt)
@@ -76,9 +96,14 @@ public class AstPrinter
 
 	string Stmt.IVisitor<string>.VisitVarStmt(Stmt.Var stmt)
 	{
-		if (stmt.initializer != null) {
-			return "(var " + stmt.name.lexeme + "=" + Print(stmt.initializer) + ")";
+		if (stmt.initializer == null) {
+			return Parenthesize("var", stmt.name);
 		}
-		return "(var " + stmt.name.lexeme + ")";
+		return Parenthesize("var", stmt.name, "=", stmt.initializer);
+	}
+
+	string Stmt.IVisitor<string>.VisitWhileStmt(Stmt.While stmt)
+	{
+		return Parenthesize("while", stmt.condition, stmt.body);
 	}
 }

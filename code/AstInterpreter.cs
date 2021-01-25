@@ -38,13 +38,13 @@ public class AstInterpreter
 	}
 
 	// recovery
-	private void CheckNumberOperand(Token token, Any value)
+	private static void CheckNumberOperand(Token token, Any value)
 	{
 		if (value is double) { return; }
 		throw new RuntimeErrorException(token, "expected a number");
 	}
 
-	private void CheckNumberOperands(Token token, Any left, Any right)
+	private static void CheckNumberOperands(Token token, Any left, Any right)
 	{
 		if (left is double && right is double) { return; }
 		throw new RuntimeErrorException(token, "expected numbers");
@@ -93,6 +93,23 @@ public class AstInterpreter
 		return expr.value;
 	}
 
+	Any Expr.IVisitor<Any>.VisitLogicalExpr(Expr.Logical expr)
+	{
+		Any left = Evaluate(expr.left);
+
+		switch (expr.op.type) {
+			case TokenType.OR: {
+				if (IsTrue(left)) { return left; }
+			} break;
+
+			case TokenType.AND: {
+				if (!IsTrue(left)) { return left; }
+			} break;
+		}
+
+		return Evaluate(expr.right);
+	}
+
 	Any Expr.IVisitor<Any>.VisitUnaryExpr(Expr.Unary expr)
 	{
 		Any value = Evaluate(expr.right);
@@ -122,6 +139,17 @@ public class AstInterpreter
 		return default;
 	}
 
+	Void Stmt.IVisitor<Void>.VisitIfStmt(Stmt.If stmt)
+	{
+		if (IsTrue(Evaluate(stmt.condition))) {
+			Execute(stmt.thenBranch);
+		}
+		else if (stmt.elseBranch != null) {
+			Execute(stmt.elseBranch);
+		}
+		return default;
+	}
+
 	Void Stmt.IVisitor<Void>.VisitPrintStmt(Stmt.Print stmt)
 	{
 		Any value = Evaluate(stmt.expression);
@@ -136,6 +164,14 @@ public class AstInterpreter
 			value = Evaluate(stmt.initializer);
 		}
 		environment.Define(stmt.name.lexeme, value);
+		return default;
+	}
+
+	Void Stmt.IVisitor<Void>.VisitWhileStmt(Stmt.While stmt)
+	{
+		while (IsTrue(Evaluate(stmt.condition))) {
+			Execute(stmt.body);
+		}
 		return default;
 	}
 
