@@ -7,33 +7,26 @@
 		"clear": true,
 		"revealProblems": "onProblem",
 	},
+	"type": "shell",
 	"options": {"cwd": "../project"},
 	"tasks": [
 		{
 			"label": "Build interpreter",
 			"group": "build",
-			"type": "process",
-			"command": "dotnet",
+			"command": "build.bat",
 			"args": [
-				"build",
 				"interpreter.csproj",
-				"/property:GenerateFullPaths=true",
-				"/consoleloggerparameters:NoSummary"
 			],
 			"problemMatcher":"$msCompile",
 		},
 		{
 			"label": "Build ast_generator",
 			"group": "build",
-			"type": "process",
-			"command": "dotnet",
+			"command": "build.bat",
 			"args": [
-				"build",
 				"ast_generator.csproj",
-				"/property:GenerateFullPaths=true",
-				"/consoleloggerparameters:NoSummary"
 			],
 			"problemMatcher":"$msCompile",
-		}
+		},
 	]
 }

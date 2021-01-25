@@ -7,7 +7,6 @@
 			"program": "bin/interpreter.exe",
 			"args": [],
 			"cwd": "${workspaceFolder}/..",
-			"stopAtEntry": false,
 			"externalConsole": true,
 			"type": "coreclr",
 		},
@@ -17,7 +16,6 @@
 			"program": "bin/ast_generator.exe",
 			"args": [],
 			"cwd": "${workspaceFolder}/..",
-			"stopAtEntry": false,
 			"externalConsole": true,
 			"type": "coreclr",
 		}
