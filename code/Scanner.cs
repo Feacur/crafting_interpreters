@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Any = System.Object;
 
 public class Scanner
 {
@@ -122,7 +123,7 @@ public class Scanner
 
 	private void AddToken(TokenType type) => AddToken(type, null);
 
-	private void AddToken(TokenType type, object literal)
+	private void AddToken(TokenType type, Any literal)
 	{
 		string lexeme = source.Substring(start, current - start);
 		tokens.Add(new Token(type, lexeme, literal, line));

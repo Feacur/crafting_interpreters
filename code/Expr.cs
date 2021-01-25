@@ -37,13 +37,13 @@ public abstract class Expr
 	public class Binary : Expr
 	{
 		public Expr left;
-		public Token token;
+		public Token op;
 		public Expr right;
 
-		public Binary(Expr left, Token token, Expr right)
+		public Binary(Expr left, Token op, Expr right)
 		{
 			this.left = left;
-			this.token = token;
+			this.op = op;
 			this.right = right;
 		}
 
@@ -85,12 +85,12 @@ public abstract class Expr
 
 	public class Unary : Expr
 	{
-		public Token token;
+		public Token op;
 		public Expr right;
 
-		public Unary(Token token, Expr right)
+		public Unary(Token op, Expr right)
 		{
-			this.token = token;
+			this.op = op;
 			this.right = right;
 		}
 

@@ -27,7 +27,7 @@ public class AstPrinter
 
 	string Expr.IVisitor<string>.VisitBinaryExpr(Expr.Binary expr)
 	{
-		return Parenthesize(expr.token.lexeme, expr.left, expr.right);
+		return Parenthesize(expr.op.lexeme, expr.left, expr.right);
 	}
 
 	string Expr.IVisitor<string>.VisitGroupingExpr(Expr.Grouping expr)
@@ -43,7 +43,7 @@ public class AstPrinter
 
 	string Expr.IVisitor<string>.VisitUnaryExpr(Expr.Unary expr)
 	{
-		return Parenthesize(expr.token.lexeme, expr.right);
+		return Parenthesize(expr.op.lexeme, expr.right);
 	}
 
 	string Expr.IVisitor<string>.VisitVariableExpr(Expr.Variable expr)

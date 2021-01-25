@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using Void = System.Object; // should be 'void', but C# doesn't allow generics to use that
+using Any = System.Object;
 
 public class AstInterpreter
-	: Expr.IVisitor<object>
+	: Expr.IVisitor<Any>
 	, Stmt.IVisitor<Void>
 {
 	private Environment environment = new Environment();
@@ -19,7 +20,7 @@ public class AstInterpreter
 		}
 	}
 
-	private object Evaluate(Expr expr) => expr.Accept(this);
+	private Any Evaluate(Expr expr) => expr.Accept(this);
 	private void Execute(Stmt stmt) => stmt.Accept(this);
 
 	private void ExecuteBlock(List<Stmt> statements, Environment environment)
@@ -37,73 +38,73 @@ public class AstInterpreter
 	}
 
 	// recovery
-	private void CheckNumberOperand(Token token, object value)
+	private void CheckNumberOperand(Token token, Any value)
 	{
 		if (value is double) { return; }
 		throw new RuntimeErrorException(token, "expected a number");
 	}
 
-	private void CheckNumberOperands(Token token, object left, object right)
+	private void CheckNumberOperands(Token token, Any left, Any right)
 	{
 		if (left is double && right is double) { return; }
 		throw new RuntimeErrorException(token, "expected numbers");
 	}
 
-	// Expr.IVisitor<object>
-	object Expr.IVisitor<object>.VisitAssignExpr(Expr.Assign expr)
+	// Expr.IVisitor<Any>
+	Any Expr.IVisitor<Any>.VisitAssignExpr(Expr.Assign expr)
 	{
-		object value = Evaluate(expr.value);
+		Any value = Evaluate(expr.value);
 		environment.Assign(expr.name, value);
 		return value;
 	}
 
-	object Expr.IVisitor<object>.VisitBinaryExpr(Expr.Binary expr)
+	Any Expr.IVisitor<Any>.VisitBinaryExpr(Expr.Binary expr)
 	{
-		object left = Evaluate(expr.left);
-		object right = Evaluate(expr.right);
-		switch (expr.token.type) {
+		Any left = Evaluate(expr.left);
+		Any right = Evaluate(expr.right);
+		switch (expr.op.type) {
 			case TokenType.PLUS: {
 				if (left is string && right is string) { return (string)left + (string)right; }
-				CheckNumberOperands(expr.token, left, right); return (double)left + (double)right;
+				CheckNumberOperands(expr.op, left, right); return (double)left + (double)right;
 			}
-			case TokenType.MINUS: CheckNumberOperands(expr.token, left, right); return (double)left - (double)right;
-			case TokenType.STAR:  CheckNumberOperands(expr.token, left, right); return (double)left * (double)right;
-			case TokenType.SLASH: CheckNumberOperands(expr.token, left, right); return (double)left / (double)right;
+			case TokenType.MINUS: CheckNumberOperands(expr.op, left, right); return (double)left - (double)right;
+			case TokenType.STAR:  CheckNumberOperands(expr.op, left, right); return (double)left * (double)right;
+			case TokenType.SLASH: CheckNumberOperands(expr.op, left, right); return (double)left / (double)right;
 
-			case TokenType.GREATER:       CheckNumberOperands(expr.token, left, right); return (double)left > (double)right;
-			case TokenType.GREATER_EQUAL: CheckNumberOperands(expr.token, left, right); return (double)left >= (double)right;
-			case TokenType.LESS:          CheckNumberOperands(expr.token, left, right); return (double)left < (double)right;
-			case TokenType.LESS_EQUAL:    CheckNumberOperands(expr.token, left, right); return (double)left <= (double)right;
+			case TokenType.GREATER:       CheckNumberOperands(expr.op, left, right); return (double)left > (double)right;
+			case TokenType.GREATER_EQUAL: CheckNumberOperands(expr.op, left, right); return (double)left >= (double)right;
+			case TokenType.LESS:          CheckNumberOperands(expr.op, left, right); return (double)left < (double)right;
+			case TokenType.LESS_EQUAL:    CheckNumberOperands(expr.op, left, right); return (double)left <= (double)right;
 
 			case TokenType.BANG_EQUAL:  return !IsEqual(left, right);
 			case TokenType.EQUAL_EQUAL: return IsEqual(left, right);
 		}
-		Lox.RuntimeError(expr.token, "wrong binary expression");
+		Lox.RuntimeError(expr.op, "wrong binary expression");
 		return null;
 	}
 
-	object Expr.IVisitor<object>.VisitGroupingExpr(Expr.Grouping expr)
+	Any Expr.IVisitor<Any>.VisitGroupingExpr(Expr.Grouping expr)
 	{
 		return Evaluate(expr.expression);
 	}
 
-	object Expr.IVisitor<object>.VisitLiteralExpr(Expr.Literal expr)
+	Any Expr.IVisitor<Any>.VisitLiteralExpr(Expr.Literal expr)
 	{
 		return expr.value;
 	}
 
-	object Expr.IVisitor<object>.VisitUnaryExpr(Expr.Unary expr)
+	Any Expr.IVisitor<Any>.VisitUnaryExpr(Expr.Unary expr)
 	{
-		object value = Evaluate(expr.right);
-		switch (expr.token.type) {
+		Any value = Evaluate(expr.right);
+		switch (expr.op.type) {
 			case TokenType.BANG: return !IsTrue(value);
-			case TokenType.MINUS: CheckNumberOperand(expr.token, value); return -(double)value;
+			case TokenType.MINUS: CheckNumberOperand(expr.op, value); return -(double)value;
 		}
-		Lox.RuntimeError(expr.token, "wrong unary expression");
+		Lox.RuntimeError(expr.op, "wrong unary expression");
 		return null;
 	}
 
-	object Expr.IVisitor<object>.VisitVariableExpr(Expr.Variable expr)
+	Any Expr.IVisitor<Any>.VisitVariableExpr(Expr.Variable expr)
 	{
 		return environment.Get(expr.name);
 	}
@@ -123,14 +124,14 @@ public class AstInterpreter
 
 	Void Stmt.IVisitor<Void>.VisitPrintStmt(Stmt.Print stmt)
 	{
-		object value = Evaluate(stmt.expression);
+		Any value = Evaluate(stmt.expression);
 		System.Console.WriteLine(Stringify(value));
 		return default;
 	}
 
 	Void Stmt.IVisitor<Void>.VisitVarStmt(Stmt.Var stmt)
 	{
-		object value = null;
+		Any value = null;
 		if (stmt.initializer != null) {
 			value = Evaluate(stmt.initializer);
 		}
@@ -139,21 +140,21 @@ public class AstInterpreter
 	}
 
 	// data
-	private static bool IsTrue(object value)
+	private static bool IsTrue(Any value)
 	{
 		if (value == null) { return false; }
 		if (value is bool) { return (bool)value; }
 		return true;
 	}
 	
-	private static bool IsEqual(object left, object right)
+	private static bool IsEqual(Any left, Any right)
 	{
 		if (left == null && right == null) { return true; }
 		if (left == null) { return false; }
 		return left.Equals(right);
 	}
 
-	private static string Stringify(object value)
+	private static string Stringify(Any value)
 	{
 		if (value == null) { return "nil"; }
 		if (value is double) {

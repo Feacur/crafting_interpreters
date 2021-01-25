@@ -6,10 +6,10 @@ class AstGenerator
 	{
 		DefineAst("code", "Expr", new string[] {
 			"Assign   : Token name, Expr value",
-			"Binary   : Expr left, Token token, Expr right",
+			"Binary   : Expr left, Token op, Expr right",
 			"Grouping : Expr expression",
 			"Literal  : Any value",
-			"Unary    : Token token, Expr right",
+			"Unary    : Token op, Expr right",
 			"Variable : Token name",
 		});
 

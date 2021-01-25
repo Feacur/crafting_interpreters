@@ -1,9 +1,10 @@
 using System.Collections.Generic;
+using Any = System.Object;
 
 class Environment
 {
 	private readonly Environment enclosing;
-	private readonly Dictionary<string, object> variables = new Dictionary<string, object>();
+	private readonly Dictionary<string, Any> variables = new Dictionary<string, Any>();
 
 	public Environment()
 	{
@@ -15,13 +16,13 @@ class Environment
 		this.enclosing = enclosing;
 	}
 
-	public void Define(string name, object value)
+	public void Define(string name, Any value)
 	{
 		variables[name] = value; // allow redifinition
 		// variables.Add(name, value);
 	}
 
-	public void Assign(Token name, object value)
+	public void Assign(Token name, Any value)
 	{
 		if (variables.ContainsKey(name.lexeme)) {
 			variables[name.lexeme] = value;
@@ -31,9 +32,9 @@ class Environment
 		throw new RuntimeErrorException(name, "undefined variable '" + name.lexeme + "'");
 	}
 
-	public object Get(Token name)
+	public Any Get(Token name)
 	{
-		if (variables.TryGetValue(name.lexeme, out object value)) {
+		if (variables.TryGetValue(name.lexeme, out Any value)) {
 			return value;
 		}
 		if (enclosing != null) { return enclosing.Get(name); }
