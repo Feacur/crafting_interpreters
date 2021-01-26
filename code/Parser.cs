@@ -29,10 +29,12 @@ public class Parser
 	private Stmt DoStatement()
 	{
 		try {
+			if (Match(TokenType.FUN)) { return DoFunStatement("function"); }
 			if (Match(TokenType.VAR)) { return DoVarStatement(); }
 			if (Match(TokenType.FOR)) { return DoForStatement(); }
 			if (Match(TokenType.IF)) { return DoIfStatement(); }
 			if (Match(TokenType.PRINT)) { return DoPrintStatement(); }
+			if (Match(TokenType.RETURN)) { return DoReturnStatement(); }
 			if (Match(TokenType.WHILE)) { return DoWhileStatement(); }
 			if (Match(TokenType.LEFT_BRACE)) { return DoBlockStatement(); }
 			return DoExpressionStatement();
@@ -41,6 +43,28 @@ public class Parser
 			Synchronize();
 			return null;
 		}
+	}
+
+	private Stmt DoFunStatement(string kind)
+	{
+		Token name = Consume(TokenType.IDENTIFIER, "expected a " + kind + " name");
+
+		Consume(TokenType.LEFT_PAREN, "expected a '(");
+		List<Token> parameters = new List<Token>();
+		if (!IsAtEnd() && Peek().type != TokenType.RIGHT_PAREN) {
+			do {
+				if (parameters.Count >= 255) {
+					Error(Peek(), "parameters count is limited to 255");
+				}
+				parameters.Add(Consume(TokenType.IDENTIFIER, "expected a parameter name"));
+			} while (Match(TokenType.COMMA));
+		}
+		Consume(TokenType.RIGHT_PAREN, "expected a ')");
+
+		Consume(TokenType.LEFT_BRACE, "expected a '{");
+		List<Stmt> body = DoBlock();
+
+		return new Stmt.Function(name, parameters, body);
 	}
 
 	private Stmt DoVarStatement()
@@ -151,6 +175,18 @@ public class Parser
 		return new Stmt.Print(expr);
 	}
 
+	private Stmt DoReturnStatement()
+	{
+		Token keyword = PeekPrev();
+		Expr value = null;
+		if (!IsAtEnd() && Peek().type != TokenType.SEMICOLON) {
+			value = DoExpression();
+		}
+
+		Consume(TokenType.SEMICOLON, "expected a ';'");
+		return new Stmt.Return(keyword, value);
+	}
+
 	private Stmt DoBlockStatement() => new Stmt.Block(DoBlock());
 
 	private List<Stmt> DoBlock()
@@ -235,7 +271,33 @@ public class Parser
 			Expr right = DoUnary();
 			return new Expr.Unary(token, right);
 		}
-		return DoPrimary();
+		return DoCall();
+	}
+
+	private Expr DoCall()
+	{
+		Expr expr = DoPrimary();
+
+		while (true) {
+			if (Match(TokenType.LEFT_PAREN)) {
+				List<Expr> arguments = new List<Expr>();
+				if (!IsAtEnd() && Peek().type != TokenType.RIGHT_PAREN) {
+					do {
+						if (arguments.Count >= 255) {
+							Error(Peek(), "arguments count is limited to 255");
+						}
+						arguments.Add(DoExpression());
+					} while (Match(TokenType.COMMA));
+				}
+				Token paren = Consume(TokenType.RIGHT_PAREN, "expected a ')");
+				expr = new Expr.Call(expr, paren, arguments);
+			}
+			else {
+				break;
+			}
+		}
+
+		return expr;
 	}
 
 	private Expr DoPrimary()

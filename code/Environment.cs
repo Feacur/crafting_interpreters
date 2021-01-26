@@ -1,7 +1,8 @@
+using System;
 using System.Collections.Generic;
 using Any = System.Object;
 
-class Environment
+public class Environment
 {
 	private readonly Environment enclosing;
 	private readonly Dictionary<string, Any> variables = new Dictionary<string, Any>();
@@ -15,6 +16,8 @@ class Environment
 	{
 		this.enclosing = enclosing;
 	}
+
+	public void Define<T>() => Define(typeof(T).Name, Activator.CreateInstance<T>());
 
 	public void Define(string name, Any value)
 	{

@@ -6,7 +6,14 @@ public class AstInterpreter
 	: Expr.IVisitor<Any>
 	, Stmt.IVisitor<Void>
 {
-	private Environment environment = new Environment();
+	private readonly Environment globals = new Environment();
+	private Environment environment;
+
+	public AstInterpreter()
+	{
+		environment = globals;
+		globals.Define<LoxCallables.Clock>();
+	}
 
 	public void Interpret(List<Stmt> statements)
 	{
@@ -23,7 +30,7 @@ public class AstInterpreter
 	private Any Evaluate(Expr expr) => expr.Accept(this);
 	private void Execute(Stmt stmt) => stmt.Accept(this);
 
-	private void ExecuteBlock(List<Stmt> statements, Environment environment)
+	internal void ExecuteBlock(List<Stmt> statements, Environment environment)
 	{
 		Environment previous = this.environment;
 		try {
@@ -88,6 +95,27 @@ public class AstInterpreter
 		return Evaluate(expr.expression);
 	}
 
+	Any Expr.IVisitor<Any>.VisitCallExpr(Expr.Call expr)
+	{
+		Any callee = Evaluate(expr.callee);
+
+		List<Any> arguments = new List<Any>();
+		foreach (Expr argument in expr.arguments) {
+			arguments.Add(Evaluate(argument));
+		}
+
+		if (!(callee is ILoxCallable)) {
+			throw new RuntimeErrorException(expr.paren, "is not a callable");
+		}
+
+		ILoxCallable function = (ILoxCallable)callee;
+		if (arguments.Count != function.Arity()) {
+			throw new RuntimeErrorException(expr.paren, "expected " + function.Arity() + " arguments, got " + arguments.Count);
+		}
+
+		return function.Call(this, arguments);
+	}
+
 	Any Expr.IVisitor<Any>.VisitLiteralExpr(Expr.Literal expr)
 	{
 		return expr.value;
@@ -139,6 +167,12 @@ public class AstInterpreter
 		return default;
 	}
 
+	Void Stmt.IVisitor<Void>.VisitFunctionStmt(Stmt.Function stmt)
+	{
+		environment.Define(stmt.name.lexeme, new LoxCallables.Function(stmt, environment));
+		return default;
+	}
+
 	Void Stmt.IVisitor<Void>.VisitIfStmt(Stmt.If stmt)
 	{
 		if (IsTrue(Evaluate(stmt.condition))) {
@@ -155,6 +189,15 @@ public class AstInterpreter
 		Any value = Evaluate(stmt.expression);
 		System.Console.WriteLine(Stringify(value));
 		return default;
+	}
+
+	Void Stmt.IVisitor<Void>.VisitReturnStmt(Stmt.Return stmt)
+	{
+		Any value = null;
+		if (stmt.value != null) {
+			value = Evaluate(stmt.value);
+		}
+		throw new ReturnException(value);
 	}
 
 	Void Stmt.IVisitor<Void>.VisitVarStmt(Stmt.Var stmt)

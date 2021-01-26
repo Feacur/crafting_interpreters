@@ -44,6 +44,11 @@ public class AstPrinter
 		return Parenthesize(expr.op.lexeme, expr.left, expr.right);
 	}
 
+	string Expr.IVisitor<string>.VisitCallExpr(Expr.Call expr)
+	{
+		return Parenthesize(expr.callee, expr.arguments);
+	}
+
 	string Expr.IVisitor<string>.VisitGroupingExpr(Expr.Grouping expr)
 	{
 		return Parenthesize("group", expr.expression);
@@ -81,6 +86,11 @@ public class AstPrinter
 		return Parenthesize(";", stmt.expression);
 	}
 
+	string Stmt.IVisitor<string>.VisitFunctionStmt(Stmt.Function stmt)
+	{
+		return Parenthesize(stmt.name, stmt.parameters, stmt.body);
+	}
+
 	string Stmt.IVisitor<string>.VisitIfStmt(Stmt.If stmt)
 	{
 		if (stmt.elseBranch == null) {
@@ -92,6 +102,11 @@ public class AstPrinter
 	string Stmt.IVisitor<string>.VisitPrintStmt(Stmt.Print stmt)
 	{
 		return Parenthesize("print", stmt.expression);
+	}
+
+	string Stmt.IVisitor<string>.VisitReturnStmt(Stmt.Return stmt)
+	{
+		return Parenthesize("return", stmt.value);
 	}
 
 	string Stmt.IVisitor<string>.VisitVarStmt(Stmt.Var stmt)

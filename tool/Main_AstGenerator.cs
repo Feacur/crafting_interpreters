@@ -7,6 +7,7 @@ class AstGenerator
 		DefineAst("code", "Expr", new string[] {
 			"Assign   : Token name, Expr value",
 			"Binary   : Expr left, Token op, Expr right",
+			"Call     : Expr callee, Token paren, List<Expr> arguments",
 			"Grouping : Expr expression",
 			"Literal  : Any value",
 			"Logical  : Expr left, Token op, Expr right",
@@ -17,8 +18,10 @@ class AstGenerator
 		DefineAst("code", "Stmt", new string[] {
 			"Block      : List<Stmt> statements",
 			"Expression : Expr expression",
+			"Function   : Token name, List<Token> parameters, List<Stmt> body",
 			"If         : Expr condition, Stmt thenBranch, Stmt elseBranch",
 			"Print      : Expr expression",
+			"Return     : Token keyword, Expr value",
 			"Var        : Token name, Expr initializer",
 			"While      : Expr condition, Stmt body",
 		});
