@@ -13,6 +13,7 @@ public class AstInterpreter
 	{
 		environment = globals;
 		globals.Define<LoxCallables.Clock>();
+		globals.Define<LoxCallables.Print>();
 	}
 
 	public void Interpret(List<Stmt> statements)
@@ -184,13 +185,6 @@ public class AstInterpreter
 		return default;
 	}
 
-	Void Stmt.IVisitor<Void>.VisitPrintStmt(Stmt.Print stmt)
-	{
-		Any value = Evaluate(stmt.expression);
-		System.Console.WriteLine(Stringify(value));
-		return default;
-	}
-
 	Void Stmt.IVisitor<Void>.VisitReturnStmt(Stmt.Return stmt)
 	{
 		Any value = null;
@@ -233,7 +227,7 @@ public class AstInterpreter
 		return left.Equals(right);
 	}
 
-	private static string Stringify(Any value)
+	public static string Stringify(Any value)
 	{
 		if (value == null) { return "nil"; }
 		if (value is double) {

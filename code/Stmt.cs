@@ -13,7 +13,6 @@ public abstract class Stmt
 		R VisitExpressionStmt(Expression stmt);
 		R VisitFunctionStmt(Function stmt);
 		R VisitIfStmt(If stmt);
-		R VisitPrintStmt(Print stmt);
 		R VisitReturnStmt(Return stmt);
 		R VisitVarStmt(Var stmt);
 		R VisitWhileStmt(While stmt);
@@ -84,21 +83,6 @@ public abstract class Stmt
 		public override R Accept<R>(IVisitor<R> visitor)
 		{
 			return visitor.VisitIfStmt(this);
-		}
-	}
-
-	public class Print : Stmt
-	{
-		public Expr expression;
-
-		public Print(Expr expression)
-		{
-			this.expression = expression;
-		}
-
-		public override R Accept<R>(IVisitor<R> visitor)
-		{
-			return visitor.VisitPrintStmt(this);
 		}
 	}
 

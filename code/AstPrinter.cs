@@ -99,11 +99,6 @@ public class AstPrinter
 		return Parenthesize("if", stmt.condition, stmt.thenBranch, stmt.elseBranch);
 	}
 
-	string Stmt.IVisitor<string>.VisitPrintStmt(Stmt.Print stmt)
-	{
-		return Parenthesize("print", stmt.expression);
-	}
-
 	string Stmt.IVisitor<string>.VisitReturnStmt(Stmt.Return stmt)
 	{
 		return Parenthesize("return", stmt.value);

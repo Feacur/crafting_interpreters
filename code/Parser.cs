@@ -33,7 +33,6 @@ public class Parser
 			if (Match(TokenType.VAR)) { return DoVarStatement(); }
 			if (Match(TokenType.FOR)) { return DoForStatement(); }
 			if (Match(TokenType.IF)) { return DoIfStatement(); }
-			if (Match(TokenType.PRINT)) { return DoPrintStatement(); }
 			if (Match(TokenType.RETURN)) { return DoReturnStatement(); }
 			if (Match(TokenType.WHILE)) { return DoWhileStatement(); }
 			if (Match(TokenType.LEFT_BRACE)) { return DoBlockStatement(); }
@@ -166,13 +165,6 @@ public class Parser
 		}
 
 		return new Stmt.If(condition, thenBranch, elseBranch);
-	}
-
-	private Stmt DoPrintStatement()
-	{
-		Expr expr = DoExpression();
-		Consume(TokenType.SEMICOLON, "expected a ';'");
-		return new Stmt.Print(expr);
 	}
 
 	private Stmt DoReturnStatement()
@@ -350,7 +342,6 @@ public class Parser
 				case TokenType.FOR:
 				case TokenType.IF:
 				case TokenType.WHILE:
-				case TokenType.PRINT:
 				case TokenType.RETURN:
 					break;
 			}

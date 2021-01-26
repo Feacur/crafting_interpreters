@@ -16,6 +16,19 @@ namespace LoxCallables
 		public override string ToString() { return "<native-fn " + GetType().Name + ">"; }
 	}
 
+	public class Print : ILoxCallable
+	{
+		int ILoxCallable.Arity() { return 1; }
+
+		Any ILoxCallable.Call(AstInterpreter interpreter, List<Any> arguments)
+		{
+			Console.WriteLine(AstInterpreter.Stringify(arguments[0]));
+			return null;
+		}
+
+		public override string ToString() { return "<native-fn " + GetType().Name + ">"; }
+	}
+
 	public class Function : ILoxCallable
 	{
 		private readonly Stmt.Function declaration;
