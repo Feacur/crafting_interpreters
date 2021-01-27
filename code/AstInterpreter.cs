@@ -12,8 +12,8 @@ public class AstInterpreter
 	public AstInterpreter()
 	{
 		environment = globals;
-		globals.Define<LoxCallables.Clock>();
-		globals.Define<LoxCallables.Print>();
+		globals.Define<LoxLibrary.Clock>();
+		globals.Define<LoxLibrary.Print>();
 	}
 
 	public void Interpret(List<Stmt> statements)
@@ -170,7 +170,7 @@ public class AstInterpreter
 
 	Void Stmt.IVisitor<Void>.VisitFunctionStmt(Stmt.Function stmt)
 	{
-		environment.Define(stmt.name.lexeme, new LoxCallables.Function(stmt, environment));
+		environment.Define(stmt.name.lexeme, new LoxDynamic.Function(stmt, environment));
 		return default;
 	}
 

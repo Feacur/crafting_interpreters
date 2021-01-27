@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Any = System.Object;
 
-namespace LoxCallables
+namespace LoxLibrary
 {
 	public class Clock : ILoxCallable
 	{
@@ -13,7 +13,7 @@ namespace LoxCallables
 			return (double)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 		}
 
-		public override string ToString() { return "<native-fn " + GetType().Name + ">"; }
+		public override string ToString() { return "<lib-fn " + GetType().Name + ">"; }
 	}
 
 	public class Print : ILoxCallable
@@ -26,9 +26,12 @@ namespace LoxCallables
 			return null;
 		}
 
-		public override string ToString() { return "<native-fn " + GetType().Name + ">"; }
+		public override string ToString() { return "<lib-fn " + GetType().Name + ">"; }
 	}
+}
 
+namespace LoxDynamic
+{
 	public class Function : ILoxCallable
 	{
 		private readonly Stmt.Function declaration;
