@@ -29,6 +29,7 @@ public class Parser
 	private Stmt DoStatement()
 	{
 		try {
+			if (Match(TokenType.CLASS)) { return DoClassStatement(); }
 			if (Match(TokenType.FUN)) { return DoFunStatement("function"); }
 			if (Match(TokenType.VAR)) { return DoVarStatement(); }
 			if (Match(TokenType.FOR)) { return DoForStatement(); }
@@ -44,7 +45,22 @@ public class Parser
 		}
 	}
 
-	private Stmt DoFunStatement(string kind)
+	private Stmt DoClassStatement()
+	{
+		Token name = Consume(TokenType.IDENTIFIER, "expected a class name");
+		Consume(TokenType.LEFT_BRACE, "expected a '{'");
+
+		List<Stmt.Function> methods = new List<Stmt.Function>();
+		while (!IsAtEnd() && Peek().type != TokenType.RIGHT_BRACE) {
+			methods.Add(DoFunStatement("method"));
+		}
+
+		Consume(TokenType.RIGHT_BRACE, "expected a '}'");
+
+		return new Stmt.Class(name, methods);
+	}
+
+	private Stmt.Function DoFunStatement(string kind)
 	{
 		Token name = Consume(TokenType.IDENTIFIER, "expected a " + kind + " name");
 
@@ -213,6 +229,10 @@ public class Parser
 				Token name = ((Expr.Variable)expr).name;
 				return new Expr.Assign(name, value);
 			}
+			else if (expr is Expr.Get) {
+				Expr.Get get = (Expr.Get)expr;
+				return new Expr.Set(get.obj, get.name, value);
+			}
 
 			Error(equals, "invalid assignment target"); // no throw
 		}
@@ -283,6 +303,10 @@ public class Parser
 				}
 				Token paren = Consume(TokenType.RIGHT_PAREN, "expected a ')");
 				expr = new Expr.Call(expr, paren, arguments);
+			}
+			else if (Match(TokenType.DOT)) {
+				Token name = Consume(TokenType.IDENTIFIER, "expected a property name");
+				expr = new Expr.Get(expr, name);
 			}
 			else {
 				break;

@@ -136,6 +136,15 @@ public class AstInterpreter
 		return function.Call(this, arguments);
 	}
 
+	Any Expr.IVisitor<Any>.VisitGetExpr(Expr.Get expr)
+	{
+		Any obj = Evaluate(expr.obj);
+		if (!(obj is LoxInstance)) {
+			throw new RuntimeErrorException(expr.name, "only instances have properties");
+		}
+		return ((LoxInstance)obj).Get(expr.name);
+	}
+
 	Any Expr.IVisitor<Any>.VisitLiteralExpr(Expr.Literal expr)
 	{
 		return expr.value;
@@ -156,6 +165,19 @@ public class AstInterpreter
 		}
 
 		return Evaluate(expr.right);
+	}
+
+	Any Expr.IVisitor<Any>.VisitSetExpr(Expr.Set expr)
+	{
+		Any obj = Evaluate(expr.obj);
+
+		if (!(obj is LoxInstance)) {
+			throw new RuntimeErrorException(expr.name, "only instances have fields");
+		}
+
+		Any value = Evaluate(expr.value);
+		((LoxInstance)obj).Set(expr.name, value);
+		return value;
 	}
 
 	Any Expr.IVisitor<Any>.VisitUnaryExpr(Expr.Unary expr)
@@ -181,6 +203,19 @@ public class AstInterpreter
 		return default;
 	}
 
+	Void Stmt.IVisitor<Void>.VisitClassStmt(Stmt.Class stmt)
+	{
+		environment.Define(stmt.name.lexeme, null);
+		Dictionary<string, LoxFunction> methods = new Dictionary<string, LoxFunction>();
+		foreach (Stmt.Function method in stmt.methods) {
+			LoxFunction function = new LoxFunction(method, environment);
+			methods[method.name.lexeme] = function;
+		}
+		LoxClass loxClass = new LoxClass(stmt.name.lexeme, methods);
+		environment.Assign(stmt.name, loxClass);
+		return default;
+	}
+
 	Void Stmt.IVisitor<Void>.VisitExpressionStmt(Stmt.Expression stmt)
 	{
 		Evaluate(stmt.expression);
@@ -189,7 +224,7 @@ public class AstInterpreter
 
 	Void Stmt.IVisitor<Void>.VisitFunctionStmt(Stmt.Function stmt)
 	{
-		environment.Define(stmt.name.lexeme, new LoxDynamic.Function(stmt, environment));
+		environment.Define(stmt.name.lexeme, new LoxFunction(stmt, environment));
 		return default;
 	}
 

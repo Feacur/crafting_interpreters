@@ -12,9 +12,11 @@ public abstract class Expr
 		R VisitAssignExpr(Assign expr);
 		R VisitBinaryExpr(Binary expr);
 		R VisitCallExpr(Call expr);
+		R VisitGetExpr(Get expr);
 		R VisitGroupingExpr(Grouping expr);
 		R VisitLiteralExpr(Literal expr);
 		R VisitLogicalExpr(Logical expr);
+		R VisitSetExpr(Set expr);
 		R VisitUnaryExpr(Unary expr);
 		R VisitVariableExpr(Variable expr);
 	}
@@ -74,6 +76,23 @@ public abstract class Expr
 		}
 	}
 
+	public class Get : Expr
+	{
+		public Expr obj;
+		public Token name;
+
+		public Get(Expr obj, Token name)
+		{
+			this.obj = obj;
+			this.name = name;
+		}
+
+		public override R Accept<R>(IVisitor<R> visitor)
+		{
+			return visitor.VisitGetExpr(this);
+		}
+	}
+
 	public class Grouping : Expr
 	{
 		public Expr expression;
@@ -120,6 +139,25 @@ public abstract class Expr
 		public override R Accept<R>(IVisitor<R> visitor)
 		{
 			return visitor.VisitLogicalExpr(this);
+		}
+	}
+
+	public class Set : Expr
+	{
+		public Expr obj;
+		public Token name;
+		public Expr value;
+
+		public Set(Expr obj, Token name, Expr value)
+		{
+			this.obj = obj;
+			this.name = name;
+			this.value = value;
+		}
+
+		public override R Accept<R>(IVisitor<R> visitor)
+		{
+			return visitor.VisitSetExpr(this);
 		}
 	}
 

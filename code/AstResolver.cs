@@ -25,6 +25,7 @@ public class AstResolver
 	private enum FunctionType {
 		NONE,
 		FUNCTION,
+		METHOD,
 	}
 
 	private void Resolve(Expr expr) => expr.Accept(this);
@@ -101,6 +102,12 @@ public class AstResolver
 		return default;
 	}
 
+	Void Expr.IVisitor<Void>.VisitGetExpr(Expr.Get expr)
+	{
+		Resolve(expr.obj);
+		return default;
+	}
+
 	Void Expr.IVisitor<Void>.VisitGroupingExpr(Expr.Grouping expr)
 	{
 		Resolve(expr.expression);
@@ -117,6 +124,13 @@ public class AstResolver
 	{
 		Resolve(expr.left);
 		Resolve(expr.right);
+		return default;
+	}
+
+	Void Expr.IVisitor<Void>.VisitSetExpr(Expr.Set expr)
+	{
+		Resolve(expr.value);
+		Resolve(expr.obj);
 		return default;
 	}
 
@@ -141,6 +155,16 @@ public class AstResolver
 		BeginScope();
 		Resolve(stmt.statements);
 		EndScope();
+		return default;
+	}
+
+	Void Stmt.IVisitor<Void>.VisitClassStmt(Stmt.Class stmt)
+	{
+		Declare(stmt.name);
+		foreach (Stmt.Function method in stmt.methods) {
+			ResolveFunction(method, FunctionType.METHOD);
+		}
+		Define(stmt.name);
 		return default;
 	}
 

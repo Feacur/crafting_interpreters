@@ -49,6 +49,11 @@ public class AstPrinter
 		return Parenthesize(expr.callee, expr.arguments);
 	}
 
+	string Expr.IVisitor<string>.VisitGetExpr(Expr.Get expr)
+	{
+		return Parenthesize("get", expr.obj, expr.name);
+	}
+
 	string Expr.IVisitor<string>.VisitGroupingExpr(Expr.Grouping expr)
 	{
 		return Parenthesize("group", expr.expression);
@@ -65,6 +70,11 @@ public class AstPrinter
 		return Parenthesize(expr.op.lexeme, expr.left, expr.right);
 	}
 
+	string Expr.IVisitor<string>.VisitSetExpr(Expr.Set expr)
+	{
+		return Parenthesize("set", expr.name, expr.value);
+	}
+
 	string Expr.IVisitor<string>.VisitUnaryExpr(Expr.Unary expr)
 	{
 		return Parenthesize(expr.op.lexeme, expr.right);
@@ -79,6 +89,11 @@ public class AstPrinter
 	string Stmt.IVisitor<string>.VisitBlockStmt(Stmt.Block stmt)
 	{
 		return Parenthesize("block", stmt.statements);
+	}
+
+	string Stmt.IVisitor<string>.VisitClassStmt(Stmt.Class stmt)
+	{
+		return Parenthesize("class", stmt.methods);
 	}
 
 	string Stmt.IVisitor<string>.VisitExpressionStmt(Stmt.Expression stmt)

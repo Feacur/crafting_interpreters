@@ -1,0 +1,13 @@
+class Bagel {}
+var bagel = Bagel();
+Print(bagel); // Prints "Bagel instance".
+
+class Bacon {
+	eat() {
+		Print("Crunch crunch crunch!");
+	}
+}
+
+Bacon().eat(); // Prints "Crunch crunch crunch!".
+
+ConsoleRead();
