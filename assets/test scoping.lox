@@ -17,3 +17,5 @@ var c = "global c";
 Print(a);
 Print(b);
 Print(c);
+
+ConsoleRead();

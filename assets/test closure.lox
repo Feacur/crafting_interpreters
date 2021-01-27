@@ -1,0 +1,14 @@
+var a = "global";
+{
+	fun showA() {
+		Print(a);
+	}
+
+	showA();
+	var a = "block";
+	showA();
+}
+
+Print(Print);
+
+ConsoleRead();

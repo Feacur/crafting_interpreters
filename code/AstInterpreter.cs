@@ -6,6 +6,7 @@ public class AstInterpreter
 	: Expr.IVisitor<Any>
 	, Stmt.IVisitor<Void>
 {
+	private readonly Dictionary<Expr, int> locals = new Dictionary<Expr, int>();
 	private readonly Environment globals = new Environment();
 	private Environment environment;
 
@@ -14,6 +15,7 @@ public class AstInterpreter
 		environment = globals;
 		globals.Define<LoxLibrary.Clock>();
 		globals.Define<LoxLibrary.Print>();
+		globals.Define<LoxLibrary.ConsoleRead>();
 	}
 
 	public void Interpret(List<Stmt> statements)
@@ -45,6 +47,16 @@ public class AstInterpreter
 		}
 	}
 
+	internal void Resolve(Expr expr, int depth) => locals[expr] = depth;
+
+	private Any LookUpVariable(Token name, Expr expr)
+	{
+		if (locals.TryGetValue(expr, out int depth)) {
+			return environment.GetAt(depth, name.lexeme);
+		}
+		return globals.Get(name);
+	}
+
 	// recovery
 	private static void CheckNumberOperand(Token token, Any value)
 	{
@@ -62,7 +74,14 @@ public class AstInterpreter
 	Any Expr.IVisitor<Any>.VisitAssignExpr(Expr.Assign expr)
 	{
 		Any value = Evaluate(expr.value);
-		environment.Assign(expr.name, value);
+
+		if (locals.TryGetValue(expr, out int depth)) {
+			environment.AssignAt(depth, expr.name, value);
+		}
+		else {
+			globals.Assign(expr.name, value);
+		}
+
 		return value;
 	}
 
@@ -152,7 +171,7 @@ public class AstInterpreter
 
 	Any Expr.IVisitor<Any>.VisitVariableExpr(Expr.Variable expr)
 	{
-		return environment.Get(expr.name);
+		return LookUpVariable(expr.name, expr);
 	}
 
 	// Stmt.IVisitor<string>

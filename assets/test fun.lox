@@ -36,3 +36,5 @@ fun fib(n) {
 for (var i = 0; i < 20; i = i + 1) {
 	Print(fib(i));
 }
+
+ConsoleRead();

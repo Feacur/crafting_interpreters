@@ -28,6 +28,18 @@ namespace LoxLibrary
 
 		public override string ToString() { return "<lib-fn " + GetType().Name + ">"; }
 	}
+
+	public class ConsoleRead : ILoxCallable
+	{
+		int ILoxCallable.Arity() { return 0; }
+
+		Any ILoxCallable.Call(AstInterpreter interpreter, List<Any> arguments)
+		{
+			return (double)Console.Read();
+		}
+
+		public override string ToString() { return "<lib-fn " + GetType().Name + ">"; }
+	}
 }
 
 namespace LoxDynamic

@@ -33,7 +33,6 @@ class Lox
 		}
 
 		RunFile(args[0]);
-		System.Console.Read();
 	}
 
 	private static void RunFile(string path)
@@ -76,6 +75,12 @@ class Lox
 		// 		Console.WriteLine(printer.Print(statement));
 		// 	}
 		// }
+
+		AstResolver resolver = new AstResolver(interpreter);
+		resolver.Resolve(statements);
+
+		if (hadError) { return; }
+
 		interpreter.Interpret(statements);
 	}
 

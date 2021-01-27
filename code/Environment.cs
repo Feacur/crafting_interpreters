@@ -35,6 +35,8 @@ public class Environment
 		throw new RuntimeErrorException(name, "undefined variable '" + name.lexeme + "'");
 	}
 
+	public void AssignAt(int depth, Token name, Any value) => Ancestor(depth).variables[name.lexeme] = value;
+
 	public Any Get(Token name)
 	{
 		if (variables.TryGetValue(name.lexeme, out Any value)) {
@@ -42,5 +44,16 @@ public class Environment
 		}
 		if (enclosing != null) { return enclosing.Get(name); }
 		throw new RuntimeErrorException(name, "undefined variable '" + name.lexeme + "'");
+	}
+
+	public Any GetAt(int depth, string name) => Ancestor(depth).variables[name];
+
+	private Environment Ancestor(int depth)
+	{
+		Environment environment = this;
+		for (int i = 0; i < depth; i++) {
+			environment = environment.enclosing;
+		}
+		return environment;
 	}
 }
