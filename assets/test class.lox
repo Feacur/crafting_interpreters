@@ -10,4 +10,40 @@ class Bacon {
 
 Bacon().eat(); // Prints "Crunch crunch crunch!".
 
+class Egotist {
+	speak() {
+		Print(this);
+	}
+}
+
+var method = Egotist().speak;
+method();
+
+class Cake {
+	init() {
+		this.flavor = "German chocolate";
+	}
+
+	taste() {
+		var adjective = "delicious";
+		Print("The " + this.flavor + " cake is " + adjective + "!");
+	}
+}
+
+var cake = Cake();
+cake.taste(); // Prints "The German chocolate cake is delicious!".
+
+class Thing {
+	getCallback() {
+		fun localFunction() {
+			Print(this);
+		}
+
+		return localFunction;
+	}
+}
+
+var callback = Thing().getCallback();
+callback();
+
 ConsoleRead();

@@ -180,6 +180,11 @@ public class AstInterpreter
 		return value;
 	}
 
+	Any Expr.IVisitor<Any>.VisitThisExpr(Expr.This expr)
+	{
+		return LookUpVariable(expr.keyword, expr);
+	}
+
 	Any Expr.IVisitor<Any>.VisitUnaryExpr(Expr.Unary expr)
 	{
 		Any value = Evaluate(expr.right);
@@ -208,7 +213,7 @@ public class AstInterpreter
 		environment.Define(stmt.name.lexeme, null);
 		Dictionary<string, LoxFunction> methods = new Dictionary<string, LoxFunction>();
 		foreach (Stmt.Function method in stmt.methods) {
-			LoxFunction function = new LoxFunction(method, environment);
+			LoxFunction function = new LoxFunction(method, environment, method.name.lexeme == "this");
 			methods[method.name.lexeme] = function;
 		}
 		LoxClass loxClass = new LoxClass(stmt.name.lexeme, methods);
@@ -224,7 +229,7 @@ public class AstInterpreter
 
 	Void Stmt.IVisitor<Void>.VisitFunctionStmt(Stmt.Function stmt)
 	{
-		environment.Define(stmt.name.lexeme, new LoxFunction(stmt, environment));
+		environment.Define(stmt.name.lexeme, new LoxFunction(stmt, environment, false));
 		return default;
 	}
 

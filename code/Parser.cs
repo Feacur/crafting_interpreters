@@ -326,6 +326,10 @@ public class Parser
 			return new Expr.Literal(PeekPrev().literal);
 		}
 
+		if (Match(TokenType.THIS)) {
+			return new Expr.This(PeekPrev());
+		}
+
 		if (Match(TokenType.IDENTIFIER)) {
 			return new Expr.Variable(PeekPrev());
 		}

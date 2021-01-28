@@ -17,6 +17,7 @@ public abstract class Expr
 		R VisitLiteralExpr(Literal expr);
 		R VisitLogicalExpr(Logical expr);
 		R VisitSetExpr(Set expr);
+		R VisitThisExpr(This expr);
 		R VisitUnaryExpr(Unary expr);
 		R VisitVariableExpr(Variable expr);
 	}
@@ -158,6 +159,21 @@ public abstract class Expr
 		public override R Accept<R>(IVisitor<R> visitor)
 		{
 			return visitor.VisitSetExpr(this);
+		}
+	}
+
+	public class This : Expr
+	{
+		public Token keyword;
+
+		public This(Token keyword)
+		{
+			this.keyword = keyword;
+		}
+
+		public override R Accept<R>(IVisitor<R> visitor)
+		{
+			return visitor.VisitThisExpr(this);
 		}
 	}
 

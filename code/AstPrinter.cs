@@ -75,6 +75,11 @@ public class AstPrinter
 		return Parenthesize("set", expr.name, expr.value);
 	}
 
+	string Expr.IVisitor<string>.VisitThisExpr(Expr.This expr)
+	{
+		return expr.keyword.lexeme;
+	}
+
 	string Expr.IVisitor<string>.VisitUnaryExpr(Expr.Unary expr)
 	{
 		return Parenthesize(expr.op.lexeme, expr.right);

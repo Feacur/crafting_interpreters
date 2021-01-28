@@ -9,6 +9,7 @@ public class AstResolver
 	private readonly AstInterpreter interpreter;
 	private readonly Stack<Scope> scopes = new Stack<Scope>();
 	private FunctionType currentFunction = FunctionType.NONE;
+	private ClassType currentClass = ClassType.NONE;
 
 	public AstResolver(AstInterpreter interpreter)
 	{
@@ -25,7 +26,13 @@ public class AstResolver
 	private enum FunctionType {
 		NONE,
 		FUNCTION,
+		INITIALIZER,
 		METHOD,
+	}
+
+	private enum ClassType {
+		NONE,
+		CLASS,
 	}
 
 	private void Resolve(Expr expr) => expr.Accept(this);
@@ -134,6 +141,15 @@ public class AstResolver
 		return default;
 	}
 
+	Void Expr.IVisitor<Void>.VisitThisExpr(Expr.This expr)
+	{
+		if (currentClass == ClassType.NONE) {
+			Lox.Error(expr.keyword, "'this' is only valid inside a method");
+		}
+		ResolveLocal(expr, expr.keyword);
+		return default;
+	}
+
 	Void Expr.IVisitor<Void>.VisitUnaryExpr(Expr.Unary expr)
 	{
 		Resolve(expr.right);
@@ -160,11 +176,21 @@ public class AstResolver
 
 	Void Stmt.IVisitor<Void>.VisitClassStmt(Stmt.Class stmt)
 	{
+		ClassType enclosingClass = currentClass;
+		currentClass = ClassType.CLASS;
 		Declare(stmt.name);
-		foreach (Stmt.Function method in stmt.methods) {
-			ResolveFunction(method, FunctionType.METHOD);
-		}
 		Define(stmt.name);
+		BeginScope();
+		scopes.Peek()["this"] = true;
+		foreach (Stmt.Function method in stmt.methods) {
+			FunctionType type = FunctionType.METHOD;
+			if (method.name.lexeme == "init") {
+				type = FunctionType.INITIALIZER;
+			}
+			ResolveFunction(method, type);
+		}
+		EndScope();
+		currentClass = enclosingClass;
 		return default;
 	}
 
@@ -196,6 +222,9 @@ public class AstResolver
 			Lox.Error(stmt.keyword, "can't return from top-level code");
 		}
 		if (stmt.value != null) {
+			if (currentFunction == FunctionType.INITIALIZER) {
+				Lox.Error(stmt.keyword, "can't return a value from an initializer");
+			}
 			Resolve(stmt.value);
 		}
 		return default;
