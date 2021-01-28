@@ -210,13 +210,21 @@ public class AstInterpreter
 
 	Void Stmt.IVisitor<Void>.VisitClassStmt(Stmt.Class stmt)
 	{
+		Any superclass = null;
+		if (stmt.superclass != null) {
+			superclass = Evaluate(stmt.superclass);
+			if (!(superclass is LoxClass)) {
+				throw new RuntimeErrorException(stmt.superclass.name, "superclass must be a class");
+			}
+		}
+
 		environment.Define(stmt.name.lexeme, null);
 		Dictionary<string, LoxFunction> methods = new Dictionary<string, LoxFunction>();
 		foreach (Stmt.Function method in stmt.methods) {
 			LoxFunction function = new LoxFunction(method, environment, method.name.lexeme == "this");
 			methods[method.name.lexeme] = function;
 		}
-		LoxClass loxClass = new LoxClass(stmt.name.lexeme, methods);
+		LoxClass loxClass = new LoxClass(stmt.name.lexeme, (LoxClass)superclass, methods);
 		environment.Assign(stmt.name, loxClass);
 		return default;
 	}

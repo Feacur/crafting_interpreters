@@ -4,18 +4,25 @@ using Any = System.Object;
 public class LoxClass : ILoxCallable
 {
 	private readonly string name;
+	private readonly LoxClass superclass;
 	private readonly Dictionary<string, LoxFunction> methods;
 
-	public LoxClass(string name, Dictionary<string, LoxFunction> methods)
+	public LoxClass(string name, LoxClass superclass, Dictionary<string, LoxFunction> methods)
 	{
 		this.name = name;
+		this.superclass = superclass;
 		this.methods = methods;
 	}
 
 	public LoxFunction FindMethod(string name)
 	{
-		methods.TryGetValue(name, out LoxFunction method);
-		return method;
+		if (methods.TryGetValue(name, out LoxFunction method)) {
+			return method;
+		}
+		if (superclass != null) {
+			return superclass.FindMethod(name);
+		}
+		return null;
 	}
 
 	int ILoxCallable.Arity()

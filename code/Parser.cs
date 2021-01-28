@@ -48,6 +48,13 @@ public class Parser
 	private Stmt DoClassStatement()
 	{
 		Token name = Consume(TokenType.IDENTIFIER, "expected a class name");
+
+		Expr.Variable superclass = null;
+		if (Match(TokenType.LESS)) {
+			Consume(TokenType.IDENTIFIER, "expected a superclass name");
+			superclass = new Expr.Variable(PeekPrev());
+		}
+
 		Consume(TokenType.LEFT_BRACE, "expected a '{'");
 
 		List<Stmt.Function> methods = new List<Stmt.Function>();
@@ -57,7 +64,7 @@ public class Parser
 
 		Consume(TokenType.RIGHT_BRACE, "expected a '}'");
 
-		return new Stmt.Class(name, methods);
+		return new Stmt.Class(name, superclass, methods);
 	}
 
 	private Stmt.Function DoFunStatement(string kind)

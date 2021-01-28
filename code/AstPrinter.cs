@@ -98,7 +98,10 @@ public class AstPrinter
 
 	string Stmt.IVisitor<string>.VisitClassStmt(Stmt.Class stmt)
 	{
-		return Parenthesize("class", stmt.methods);
+		if (stmt.superclass != null) {
+			return Parenthesize("class", stmt.name, "<", stmt.superclass, stmt.methods);
+		}
+		return Parenthesize("class", stmt.name, stmt.methods);
 	}
 
 	string Stmt.IVisitor<string>.VisitExpressionStmt(Stmt.Expression stmt)

@@ -180,6 +180,12 @@ public class AstResolver
 		currentClass = ClassType.CLASS;
 		Declare(stmt.name);
 		Define(stmt.name);
+		if (stmt.superclass != null) {
+			if (stmt.name.lexeme == stmt.superclass.name.lexeme) {
+				Lox.Error(stmt.superclass.name, "a class can't inherit from itself");
+			}
+			Resolve(stmt.superclass);
+		}
 		BeginScope();
 		scopes.Peek()["this"] = true;
 		foreach (Stmt.Function method in stmt.methods) {
