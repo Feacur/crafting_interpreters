@@ -180,6 +180,18 @@ public class AstInterpreter
 		return value;
 	}
 
+	Any Expr.IVisitor<Any>.VisitSuperExpr(Expr.Super expr)
+	{
+		int depth = locals[expr];
+		LoxClass superclass = (LoxClass)environment.GetAt(depth, "super");
+		LoxInstance obj = (LoxInstance)environment.GetAt(depth - 1, "this");
+		LoxFunction method = superclass.FindMethod(expr.method.lexeme);
+		if (method == null) {
+			throw new RuntimeErrorException(expr.method, "undefined property '" + expr.method.lexeme + "'");
+		}
+		return method.Bind(obj);
+	}
+
 	Any Expr.IVisitor<Any>.VisitThisExpr(Expr.This expr)
 	{
 		return LookUpVariable(expr.keyword, expr);
@@ -219,12 +231,19 @@ public class AstInterpreter
 		}
 
 		environment.Define(stmt.name.lexeme, null);
+		if (stmt.superclass != null) {
+			environment = new Environment(environment);
+			environment.Define("super", superclass);
+		}
 		Dictionary<string, LoxFunction> methods = new Dictionary<string, LoxFunction>();
 		foreach (Stmt.Function method in stmt.methods) {
 			LoxFunction function = new LoxFunction(method, environment, method.name.lexeme == "this");
 			methods[method.name.lexeme] = function;
 		}
 		LoxClass loxClass = new LoxClass(stmt.name.lexeme, (LoxClass)superclass, methods);
+		if (stmt.superclass != null) {
+			environment = environment.enclosing;
+		}
 		environment.Assign(stmt.name, loxClass);
 		return default;
 	}

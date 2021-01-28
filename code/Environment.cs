@@ -4,7 +4,7 @@ using Any = System.Object;
 
 public class Environment
 {
-	private readonly Environment enclosing;
+	internal readonly Environment enclosing;
 	private readonly Dictionary<string, Any> variables = new Dictionary<string, Any>();
 
 	public Environment()

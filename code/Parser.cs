@@ -333,6 +333,13 @@ public class Parser
 			return new Expr.Literal(PeekPrev().literal);
 		}
 
+		if (Match(TokenType.SUPER)) {
+			Token keyword = PeekPrev();
+			Consume(TokenType.DOT, "expected a '.'");
+			Token method = Consume(TokenType.IDENTIFIER, "expected a superclass method");
+			return new Expr.Super(keyword, method);
+		}
+
 		if (Match(TokenType.THIS)) {
 			return new Expr.This(PeekPrev());
 		}

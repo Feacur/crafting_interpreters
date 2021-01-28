@@ -75,6 +75,11 @@ public class AstPrinter
 		return Parenthesize("set", expr.name, expr.value);
 	}
 
+	string Expr.IVisitor<string>.VisitSuperExpr(Expr.Super expr)
+	{
+		return Parenthesize("super", expr.keyword, ".", expr.method);
+	}
+
 	string Expr.IVisitor<string>.VisitThisExpr(Expr.This expr)
 	{
 		return expr.keyword.lexeme;

@@ -33,6 +33,7 @@ public class AstResolver
 	private enum ClassType {
 		NONE,
 		CLASS,
+		SUBCLASS,
 	}
 
 	private void Resolve(Expr expr) => expr.Accept(this);
@@ -141,6 +142,15 @@ public class AstResolver
 		return default;
 	}
 
+	Void Expr.IVisitor<Void>.VisitSuperExpr(Expr.Super expr)
+	{
+		if (currentClass != ClassType.SUBCLASS) {
+			Lox.Error(expr.keyword, "can use 'super' only inside a subclass");
+		}
+		ResolveLocal(expr, expr.keyword);
+		return default;
+	}
+
 	Void Expr.IVisitor<Void>.VisitThisExpr(Expr.This expr)
 	{
 		if (currentClass == ClassType.NONE) {
@@ -184,7 +194,12 @@ public class AstResolver
 			if (stmt.name.lexeme == stmt.superclass.name.lexeme) {
 				Lox.Error(stmt.superclass.name, "a class can't inherit from itself");
 			}
+			currentClass = ClassType.SUBCLASS;
 			Resolve(stmt.superclass);
+		}
+		if (stmt.superclass != null) {
+			BeginScope();
+			scopes.Peek()["super"] = true;
 		}
 		BeginScope();
 		scopes.Peek()["this"] = true;
@@ -196,6 +211,9 @@ public class AstResolver
 			ResolveFunction(method, type);
 		}
 		EndScope();
+		if (stmt.superclass != null) {
+			EndScope();
+		}
 		currentClass = enclosingClass;
 		return default;
 	}
