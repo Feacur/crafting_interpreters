@@ -1,0 +1,51 @@
+{
+	"version": "2.0.0",
+	"presentation": {
+		"reveal": "never",
+		"panel": "shared",
+		"showReuseMessage": false,
+		"clear": true,
+		"revealProblems": "onProblem",
+	},
+	"type": "shell",
+	"options": {"cwd": "../project"},
+	"tasks": [
+		{
+			"label": "Build Clang",
+			"group": "build",
+			"command": "build_clang.bat",
+			"problemMatcher": {
+				"owner": "c",
+				"fileLocation": ["relative", "${workspaceFolder}"],
+				"pattern": {
+					"regexp": "^(.*):([0-9]*):([0-9]*): (error|warning): (.*) \\[(.*)\\]$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"severity": 4,
+					"message": 5,
+					"code": 6,
+					
+				},
+			},
+		},
+		{
+			"label": "Build CL",
+			"group": "build",
+			"command": "build_cl.bat",
+			"problemMatcher": {
+				"owner": "c",
+				"fileLocation": ["relative", "${workspaceFolder}"],
+				"pattern": {
+					"regexp": "^(.*)\\(([0-9]*),([0-9]*)\\): (error|warning) (C[0-9]*): (.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"severity": 4,
+					"code": 5,
+					"message": 6,
+				},
+			},
+		},
+	],
+}
