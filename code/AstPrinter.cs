@@ -24,6 +24,7 @@ public class AstPrinter
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void AppendBuilder(StringBuilder builder, object value)
 	{
+		builder.Append(" ");
 		if (value is Expr) { builder.Append(Print((Expr)value)); return; }
 		if (value is Stmt) { builder.Append(Print((Stmt)value)); return; }
 		if (value is Token) { builder.Append(((Token)value).lexeme); return; }
@@ -36,7 +37,7 @@ public class AstPrinter
 	// Expr.IVisitor<string>
 	string Expr.IVisitor<string>.VisitAssignExpr(Expr.Assign expr)
 	{
-		return Parenthesize("=", expr.name, expr.value);
+		return Parenthesize("=", expr.name.lexeme, expr.value);
 	}
 
 	string Expr.IVisitor<string>.VisitBinaryExpr(Expr.Binary expr)
@@ -46,12 +47,12 @@ public class AstPrinter
 
 	string Expr.IVisitor<string>.VisitCallExpr(Expr.Call expr)
 	{
-		return Parenthesize(expr.callee, expr.arguments);
+		return Parenthesize("call", expr.callee, expr.arguments);
 	}
 
 	string Expr.IVisitor<string>.VisitGetExpr(Expr.Get expr)
 	{
-		return Parenthesize("get", expr.obj, expr.name);
+		return Parenthesize(".", expr.obj, expr.name.lexeme);
 	}
 
 	string Expr.IVisitor<string>.VisitGroupingExpr(Expr.Grouping expr)
@@ -72,17 +73,17 @@ public class AstPrinter
 
 	string Expr.IVisitor<string>.VisitSetExpr(Expr.Set expr)
 	{
-		return Parenthesize("set", expr.name, expr.value);
+		return Parenthesize("=", expr.obj, expr.name, expr.value);
 	}
 
 	string Expr.IVisitor<string>.VisitSuperExpr(Expr.Super expr)
 	{
-		return Parenthesize("super", expr.keyword, ".", expr.method);
+		return Parenthesize("super", expr.method);
 	}
 
 	string Expr.IVisitor<string>.VisitThisExpr(Expr.This expr)
 	{
-		return expr.keyword.lexeme;
+		return "this";
 	}
 
 	string Expr.IVisitor<string>.VisitUnaryExpr(Expr.Unary expr)
@@ -116,7 +117,7 @@ public class AstPrinter
 
 	string Stmt.IVisitor<string>.VisitFunctionStmt(Stmt.Function stmt)
 	{
-		return Parenthesize(stmt.name, stmt.parameters, stmt.body);
+		return Parenthesize("fun", stmt.name, "(", stmt.parameters, ")", stmt.body);
 	}
 
 	string Stmt.IVisitor<string>.VisitIfStmt(Stmt.If stmt)
@@ -124,11 +125,14 @@ public class AstPrinter
 		if (stmt.elseBranch == null) {
 			return Parenthesize("if", stmt.condition, stmt.thenBranch);
 		}
-		return Parenthesize("if", stmt.condition, stmt.thenBranch, stmt.elseBranch);
+		return Parenthesize("if-else", stmt.condition, stmt.thenBranch, stmt.elseBranch);
 	}
 
 	string Stmt.IVisitor<string>.VisitReturnStmt(Stmt.Return stmt)
 	{
+		if (stmt.value == null) {
+			return "(return)";
+		}
 		return Parenthesize("return", stmt.value);
 	}
 
