@@ -2,7 +2,7 @@
 chcp 65001
 
 set debug=dummy
-set unity_build=dummy
+rem set unity_build=dummy
 
 rem https://docs.microsoft.com/cpp/build/reference/compiler-options
 rem https://docs.microsoft.com/cpp/build/reference/linker-options

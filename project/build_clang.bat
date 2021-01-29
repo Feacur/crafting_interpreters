@@ -2,7 +2,7 @@
 chcp 65001
 
 set debug=dummy
-set unity_build=dummy
+rem set unity_build=dummy
 
 rem https://clang.llvm.org/docs/index.html
 rem https://clang.llvm.org/docs/CommandGuide/clang.html
