@@ -10,7 +10,7 @@ void chunk_disassemble(Chunk * chunk, char const * name) {
 	}
 }
 
-uint32_t constant_instruction(char const * name, Chunk * chunk, uint32_t offset) {
+static uint32_t constant_instruction(char const * name, Chunk * chunk, uint32_t offset) {
 	uint8_t constant = chunk->code[offset + 1];
 	printf("%-16s %4d '", name, constant);
 	print_value(chunk->constants.values[constant]);
@@ -18,7 +18,7 @@ uint32_t constant_instruction(char const * name, Chunk * chunk, uint32_t offset)
 	return offset + 2;
 }
 
-uint32_t simple_instruction(char const * name, uint32_t offset) {
+static uint32_t simple_instruction(char const * name, uint32_t offset) {
 	printf("%s\n", name);
 	return offset + 1;
 }
