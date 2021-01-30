@@ -10,7 +10,7 @@ typedef struct {
 	Value * values;
 } Value_Array;
 
-void print_value(Value value);
+void value_print(Value value);
 
 void value_array_init(Value_Array * array);
 void value_array_free(Value_Array * array);

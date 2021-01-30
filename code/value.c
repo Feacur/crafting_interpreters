@@ -3,7 +3,7 @@
 #include "value.h"
 #include "memory.h"
 
-void print_value(Value value) {
+void value_print(Value value) {
 	printf("%g", value);
 }
 
