@@ -16,7 +16,7 @@
 			"command": "build_clang.bat",
 			"problemMatcher": {
 				"owner": "c",
-				"fileLocation": ["relative", "${workspaceFolder}"],
+				"fileLocation": ["autoDetect", "${workspaceFolder}"],
 				"pattern": {
 					"regexp": "^(.+):(\\d+):(\\d+): (error|warning|note): ([^\\[]+)( \\[.*\\])?( +|)$",
 					"file": 1,
@@ -35,7 +35,7 @@
 			"command": "build_cl.bat",
 			"problemMatcher": {
 				"owner": "c",
-				"fileLocation": ["relative", "${workspaceFolder}"],
+				"fileLocation": ["autoDetect", "${workspaceFolder}"],
 				"pattern": {
 					"regexp": "^(.+)\\((\\d+),(\\d+)\\): (error|warning) (C\\d+): (.+)( +|)$",
 					"file": 1,
