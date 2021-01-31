@@ -1,4 +1,5 @@
 #include "code/memory.c"
+#include "code/value.c"
 #include "code/chunk.c"
 #include "code/scanner.c"
 #include "code/compiler.c"

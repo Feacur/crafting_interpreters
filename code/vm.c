@@ -75,13 +75,22 @@ Interpret_Result vm_interpret_chunk(Chunk * chunk) {
 	return run();
 }
 
-static void vm_compile(char const * source) {
-	(void)source;
-}
-
 Interpret_Result vm_interpret(char const * source) {
-	vm_compile(source);
-	return INTERPRET_OK;
+	Chunk chunk;
+	chunk_init(&chunk);
+
+	if (!compile(source, &chunk)) {
+		chunk_free(&chunk);
+		return INTERPRET_COMPILE_ERROR;
+	}
+
+	vm.chunk = &chunk;
+	vm.ip = vm.chunk->code;
+
+	Interpret_Result result = run();
+
+	chunk_free(&chunk);
+	return result;
 }
 
 void vm_stack_push(Value value) {

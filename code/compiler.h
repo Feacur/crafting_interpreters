@@ -1,8 +1,8 @@
 #if !defined(LOX_COMPILER)
 #define LOX_COMPILER
 
-#include "common.h"
+#include "vm.h"
 
-void compile(char const * source);
+bool compile(char const * source, Chunk * chunk);
 
 #endif

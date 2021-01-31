@@ -31,7 +31,7 @@ static Token make_token(Token_Type type) {
 	};
 }
 
-static Token error_token(char const * message) {
+static Token make_error_token(char const * message) {
 	return (Token) {
 		.type = TOKEN_ERROR,
 		.start = message,
@@ -40,7 +40,7 @@ static Token error_token(char const * message) {
 	};
 }
 
-static char advance(void) {
+static char scanner_advance(void) {
 	return *(scanner.current++);
 }
 
@@ -67,17 +67,17 @@ static void skip_whitespace(void) {
 			case ' ':
 			case '\t':
 			case '\r':
-				advance();
+				scanner_advance();
 				break;
 
 			case '\n':
 				scanner.line++;
-				advance();
+				scanner_advance();
 				break;
 
 			case '/':
 				if (peek_next() == '/') {
-					while (!is_at_end() && peek() != '\n') { advance(); }
+					while (!is_at_end() && peek() != '\n') { scanner_advance(); }
 				}
 				else {
 					return;
@@ -90,15 +90,15 @@ static void skip_whitespace(void) {
 	}
 }
 
-static Token string(void) {
+static Token make_string_token(void) {
 	while (!is_at_end() && peek() != '"') {
 		if (peek() == '\n') { scanner.line++; }
-		advance();
+		scanner_advance();
 	}
 
-	if (is_at_end()) { return error_token("unterminated string"); }
+	if (is_at_end()) { return make_error_token("unterminated string"); }
 
-	advance();
+	scanner_advance();
 	return make_token(TOKEN_STRING);
 }
 
@@ -112,12 +112,12 @@ static bool is_alpha(char c) {
 	    || c == '_';
 }
 
-static Token number(void) {
-	while (is_digit(peek())) { advance(); }
+static Token make_number_token(void) {
+	while (is_digit(peek())) { scanner_advance(); }
 
 	if (peek() == '.' && is_digit(peek_next())) {
-		advance();
-		while (is_digit(peek())) { advance(); }
+		scanner_advance();
+		while (is_digit(peek())) { scanner_advance(); }
 	}
 
 	return make_token(TOKEN_NUMBER);
@@ -164,8 +164,8 @@ static Token_Type identifier_type(void) {
 	return TOKEN_IDENTIFIER;
 }
 
-static Token identifier(void) {
-	while (is_alpha(peek()) || is_digit(peek())) { advance(); }
+static Token make_identifier_token(void) {
+	while (is_alpha(peek()) || is_digit(peek())) { scanner_advance(); }
 	return make_token(identifier_type());
 }
 
@@ -176,9 +176,9 @@ Token scan_token(void) {
 
 	if (is_at_end()) { return make_token(TOKEN_EOF); }
 
-	char c = advance();
-	if (is_alpha(c)) { return identifier(); }
-	if (is_digit(c)) { return number(); }
+	char c = scanner_advance();
+	if (is_alpha(c)) { return make_identifier_token(); }
+	if (is_digit(c)) { return make_number_token(); }
 
 	switch (c) {
 		case '(': return make_token(TOKEN_LEFT_PAREN);
@@ -202,10 +202,10 @@ Token scan_token(void) {
 		case '>':
 			return make_token(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
 
-		case '"': return string();
+		case '"': return make_string_token();
 	}
 
-	return error_token("unexpected character");
+	return make_error_token("unexpected character");
 }
 
 // data
