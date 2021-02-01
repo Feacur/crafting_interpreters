@@ -23,8 +23,8 @@ if not defined auto_linking (
 
 rem > OPTIONS
 set includes=-I".."
-set defines=-D_CRT_SECURE_NO_WARNINGS -DWIN32_LEAN_AND_MEAN -DNOMINMAX
-set libs=user32.lib gdi32.lib
+set defines=-D_CRT_SECURE_NO_WARNINGS
+set libs=
 set warnings=-Werror -Weverything -Wno-switch-enum
 set compiler=-fno-exceptions -fno-rtti %includes% %defines%
 set linker=-nologo -WX -subsystem:console %libs%
