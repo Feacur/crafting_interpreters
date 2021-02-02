@@ -131,7 +131,7 @@ static Token_Type check_keyword(uint32_t start, uint32_t length, char const * re
 }
 
 static Token_Type identifier_type(void) {
-	switch(scanner.current[0]) {
+	switch(scanner.start[0]) {
 		case 'a': return check_keyword(1, 2, "nd", TOKEN_AND);
 		case 'c': return check_keyword(1, 4, "lass", TOKEN_CLASS);
 		case 'e': return check_keyword(1, 3, "lse", TOKEN_ELSE);
