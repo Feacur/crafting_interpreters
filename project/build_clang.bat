@@ -37,6 +37,10 @@ if defined debug (
 	set linker=%linker% -debug:no
 )
 
+if defined unity_build (
+	set linker=-Wl,%linker: =,%
+)
+
 rem > COMPILE AND LINK
 set timeStart=%time%
 cd ..
@@ -46,10 +50,11 @@ cd bin
 if not exist temp mkdir temp
 
 if defined unity_build (
-	clang -std=c99 "../project/unity_build.c" -o"interpreter.exe" %compiler% %warnings% -Wl,%libs: =,% -Xlinker -subsystem:console
+	echo %compiler% %warnings% %linker%
+	clang -std=c99 "../project/unity_build.c" -o"interpreter.exe" %compiler% %warnings% %linker%
 ) else ( rem alternatively, compile a set of translation units
 	if exist "./temp/unity_build*" del ".\temp\unity_build*"
-	clang -std=c99 -c "../code/*.c"                %compiler% %warnings%
+	clang -std=c99 -c "../code/*.c" %compiler% %warnings%
 	move ".\*.o" ".\temp"
 	lld-link "./temp/*.o" libcmt.lib -out:"interpreter.exe" %linker%
 )
