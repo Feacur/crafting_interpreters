@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "common.h"
+#include "chunk.h"
 #include "compiler.h"
 #include "scanner.h"
 
@@ -39,6 +39,8 @@ typedef struct {
 } Parse_Rule;
 
 static Parser parser;
+
+typedef struct Chunk Chunk;
 
 static Chunk * compiling_chunk;
 static Chunk * current_chunk(void) {

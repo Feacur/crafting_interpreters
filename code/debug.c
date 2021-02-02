@@ -1,6 +1,9 @@
 #include <stdio.h>
 
+#include "chunk.h"
 #include "debug.h"
+
+typedef struct Chunk Chunk;
 
 void chunk_disassemble(Chunk * chunk, char const * name) {
 	printf("== %s ==\n", name);

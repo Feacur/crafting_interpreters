@@ -1,8 +1,8 @@
 #if !defined(LOX_COMPILER)
 #define LOX_COMPILER
 
-#include "vm.h"
+struct Chunk;
 
-bool compile(char const * source, Chunk * chunk);
+bool compile(char const * source, struct Chunk * chunk);
 
 #endif

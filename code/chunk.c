@@ -1,6 +1,8 @@
 #include "chunk.h"
 #include "memory.h"
 
+typedef struct Chunk Chunk;
+
 void chunk_init(Chunk * chunk) {
 	chunk->count = 0;
 	chunk->capacity = 0;

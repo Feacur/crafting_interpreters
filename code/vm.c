@@ -1,9 +1,13 @@
 #include <stdio.h>
 
 #include "common.h"
+#include "chunk.h"
 #include "compiler.h"
-#include "debug.h"
 #include "vm.h"
+
+#if defined(DEBUG_TRACE_EXECUTION)
+#include "debug.h"
+#endif
 
 static VM vm;
 
@@ -68,6 +72,8 @@ static Interpret_Result run(void) {
 #undef READ_CONSTANT
 #undef OP_BINARY
 }
+
+typedef struct Chunk Chunk;
 
 Interpret_Result vm_interpret_chunk(Chunk * chunk) {
 	vm.chunk = chunk;
