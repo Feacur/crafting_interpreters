@@ -25,7 +25,7 @@ rem > OPTIONS
 set includes=-I".."
 set defines=-D_CRT_SECURE_NO_WARNINGS
 set libs=
-set warnings=-Werror -Weverything -Wno-switch-enum
+set warnings=-Werror -Weverything -Wno-switch-enum -Wno-float-equal
 set compiler=-fno-exceptions -fno-rtti %includes% %defines%
 set linker=-nologo -WX -subsystem:console %libs%
 

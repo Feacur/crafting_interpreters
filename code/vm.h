@@ -26,5 +26,6 @@ Interpret_Result vm_interpret_chunk(struct Chunk * chunk);
 Interpret_Result vm_interpret(char const * source);
 void vm_stack_push(Value value);
 Value vm_stack_pop(void);
+Value vm_stack_peek(uint32_t distance);
 
 #endif

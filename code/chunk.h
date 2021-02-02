@@ -5,11 +5,18 @@
 #include "value.h"
 
 typedef enum {
+	OP_NIL,
 	OP_CONSTANT,
+	OP_FALSE,
+	OP_EQUAL,
+	OP_GREATER,
+	OP_LESS,
+	OP_TRUE,
 	OP_ADD,
 	OP_SUBTRACT,
 	OP_MULTIPLY,
 	OP_DIVIDE,
+	OP_NOT,
 	OP_NEGATE,
 	OP_RETURN,
 } Op_Code;
