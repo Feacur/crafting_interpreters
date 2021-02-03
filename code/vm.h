@@ -7,12 +7,15 @@
 
 struct Chunk;
 
-typedef struct {
+struct VM {
 	struct Chunk * chunk;
 	uint8_t * ip;
 	Value stack[STACK_MAX];
 	Value * stack_top;
-} VM;
+	struct Obj * objects;
+};
+
+extern struct VM vm;
 
 typedef enum {
 	INTERPRET_OK,

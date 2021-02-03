@@ -1,7 +1,6 @@
 #if !defined(LOX_CHUNK)
 #define LOX_CHUNK
 
-#include "common.h"
 #include "value.h"
 
 typedef enum {

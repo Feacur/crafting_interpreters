@@ -3,6 +3,12 @@
 
 #include "common.h"
 
+#define ALLOCATE(type, count) \
+	(type *)reallocate(NULL, 0, sizeof(type) * (count))
+
+#define FREE(type, pointer) \
+	reallocate(pointer, sizeof(type), 0)
+
 #define GROW_CAPACITY(capacity) \
 	((capacity) < 8 ? 8 : (capacity) * 2)
 
@@ -13,5 +19,7 @@
 	reallocate(pointer, sizeof(type) * (old_count), 0)
 
 void * reallocate(void * pointer, size_t old_size, size_t new_size);
+
+void objects_free(void);
 
 #endif

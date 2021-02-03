@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "chunk.h"
+#include "object.h"
 #include "compiler.h"
 #include "scanner.h"
 
@@ -201,6 +202,14 @@ static void do_literal(void) {
 	}
 }
 
+typedef struct Obj Obj;
+
+static void do_string(void) {
+	emit_constant(TO_OBJ(
+		(Obj *)copy_string(parser.previous.start + 1, parser.previous.length - 2)
+	));
+}
+
 static void do_grouping(void) {
 	do_expression();
 	consume(TOKEN_RIGHT_PAREN, "expected a ')");
@@ -243,7 +252,7 @@ static Parse_Rule rules[] = {
 	[TOKEN_LESS]          = {NULL,        do_binary, PREC_COMPARISON},
 	[TOKEN_LESS_EQUAL]    = {NULL,        do_binary, PREC_COMPARISON},
 	// [TOKEN_IDENTIFIER]    = {NULL,        NULL,      PREC_NONE},
-	// [TOKEN_STRING]        = {NULL,        NULL,      PREC_NONE},
+	[TOKEN_STRING]        = {do_string,   NULL,      PREC_NONE},
 	[TOKEN_NUMBER]        = {do_number,   NULL,      PREC_NONE},
 	// [TOKEN_AND]           = {NULL,        NULL,      PREC_NONE},
 	// [TOKEN_CLASS]         = {NULL,        NULL,      PREC_NONE},

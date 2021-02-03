@@ -2,16 +2,18 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#include "common.h"
+#include "object.h"
 #include "chunk.h"
 #include "compiler.h"
+#include "memory.h"
 #include "vm.h"
 
 #if defined(DEBUG_TRACE_EXECUTION)
 #include "debug.h"
 #endif
 
-static VM vm;
+typedef struct VM VM;
+VM vm;
 
 static void stack_reset(void) {
 	vm.stack_top = vm.stack;
@@ -37,10 +39,11 @@ static void runtime_error(char const * format, ...) {
 
 void vm_init(void) {
 	stack_reset();
+	vm.objects = NULL;
 }
 
 void vm_free(void) {
-
+	objects_free();
 }
 
 static bool is_falsey(Value value) {
@@ -96,7 +99,18 @@ static Interpret_Result run(void) {
 			case OP_GREATER: OP_BINARY(TO_BOOL, >); break;
 			case OP_LESS:    OP_BINARY(TO_BOOL, <); break;
 
-			case OP_ADD:      OP_BINARY(TO_NUMBER, +); break;
+			case OP_ADD: {
+				if (IS_STRING(vm_stack_peek(0)) && IS_STRING(vm_stack_peek(1))) {
+					Value b = vm_stack_pop();
+					Value a = vm_stack_pop();
+					vm_stack_push(TO_OBJ(strings_concatenate(a, b)));
+				}
+				else {
+					OP_BINARY(TO_NUMBER, +);
+				}
+				break;
+			}
+
 			case OP_SUBTRACT: OP_BINARY(TO_NUMBER, -); break;
 			case OP_MULTIPLY: OP_BINARY(TO_NUMBER, *); break;
 			case OP_DIVIDE:   OP_BINARY(TO_NUMBER, /); break;
