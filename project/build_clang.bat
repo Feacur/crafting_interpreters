@@ -34,7 +34,7 @@ if defined debug (
 	set linker=%linker% -debug:full
 ) else (
 	set compiler=%compiler% -O3
-	set linker=%linker% -debug:no
+	set linker=%linker% -debug:none
 )
 
 if defined unity_build (
