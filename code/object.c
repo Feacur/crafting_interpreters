@@ -5,8 +5,11 @@
 #include "object.h"
 #include "vm.h"
 
-#define ALLOCATE_OBJ(type, object_type) \
-	(type *)(void *)allocate_object(sizeof(type), object_type)
+#define ALLOCATE_OBJ(type, flexible, object_type) \
+	(type *)(void *)allocate_object(sizeof(type) + flexible, object_type)
+
+#define FREE_OBJ(pointer, flexible) \
+	reallocate(pointer, sizeof(*pointer) + flexible, 0)
 
 typedef struct VM VM;
 
@@ -20,18 +23,17 @@ static Obj * allocate_object(size_t size, Obj_Type type) {
 	return object;
 }
 
-static Obj_String * allocate_string(char * chars, uint32_t length) {
-	Obj_String * string = ALLOCATE_OBJ(Obj_String, OBJ_STRING);
-	string->chars = chars;
+static Obj_String * allocate_string(uint32_t length) {
+	Obj_String * string = ALLOCATE_OBJ(Obj_String, sizeof(char) * (length + 1), OBJ_STRING);
 	string->length = length;
+	string->chars[length] = '\0';
 	return string;
 }
 
 Obj_String * copy_string(char const * chars, uint32_t length) {
-	char * heap_chars = ALLOCATE(char, length + 1);
-	memcpy(heap_chars, chars, length);
-	heap_chars[length] = '\0';
-	return allocate_string(heap_chars, length);
+	Obj_String * string = allocate_string(length);
+	memcpy(string->chars, chars, length);
+	return string;
 }
 
 void print_object(Value value) {
@@ -59,19 +61,17 @@ Obj_String * strings_concatenate(Value value_a, Value value_b) {
 	Obj_String * a_string = AS_STRING(value_a);
 	Obj_String * b_string = AS_STRING(value_b);
 	uint32_t length = a_string->length + b_string->length;
-	char * chars = ALLOCATE(char, length + 1);
-	memcpy(chars, a_string->chars, sizeof(char) * a_string->length);
-	memcpy(chars + a_string->length, b_string->chars, sizeof(char) * b_string->length);
-	chars[length] = '\0';
-	return allocate_string(chars, length);
+	Obj_String * string = allocate_string(length);
+	memcpy(string->chars, a_string->chars, sizeof(char) * a_string->length);
+	memcpy(string->chars + a_string->length, b_string->chars, sizeof(char) * b_string->length);
+	return string;
 }
 
 void object_free(struct Obj * object) {
 	switch (object->type) {
 		case OBJ_STRING: {
 			Obj_String * string = (Obj_String *)object;
-			FREE_ARRAY(char, string->chars, string->length + 1);
-			FREE(Obj_String, object);
+			FREE_OBJ(string, sizeof(char) * string->length);
 			break;
 		}
 	}
