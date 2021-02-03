@@ -18,7 +18,8 @@
 				"owner": "c",
 				"fileLocation": ["autoDetect", "${workspaceFolder}"],
 				"pattern": {
-					// start path:line:column: type: message [code][spaces]end
+					// between "^start" and "end$" tokens:
+					// path:line:column: type: message[ code in square braces][spaces]
 					// ^(.+):(\d+):(\d+): (error|warning|note): ([^\[]+)( \[.*\])?( +|)$
 					"regexp": "^(.+):(\\d+):(\\d+): (error|warning|note): ([^\\[]+)( \\[.*\\])?( +|)$",
 					"file": 1,
@@ -39,7 +40,8 @@
 				"owner": "c",
 				"fileLocation": ["autoDetect", "${workspaceFolder}"],
 				"pattern": {
-					// start path (line [,column])[spaces]: type C[code]: message[spaces]end
+					// between "^start" and "end$" tokens:
+					// path(line[,column])[spaces]: type code: message[spaces]
 					// ^(.+)\((\d+),?(\d+)?\)( +|): (error|warning) (C\d+): (.+)( +|)$
 					"regexp": "^(.+)\\((\\d+),?(\\d+)?\\)( +|): (error|warning) (C\\d+): (.+)( +|)$",
 					"file": 1,
