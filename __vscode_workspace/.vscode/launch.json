@@ -8,7 +8,7 @@
 			"args": [],
 			"cwd": "${workspaceFolder}/..",
 			"stopAtEntry": false,
-			"externalConsole": true,
+			"console": "newExternalWindow",
 			"type": "cppvsdbg",
 		},
 	]
