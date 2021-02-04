@@ -23,6 +23,8 @@ static Obj * allocate_object(size_t size, Obj_Type type) {
 	return object;
 }
 
+typedef struct Obj_String Obj_String;
+
 static Obj_String * allocate_string(uint32_t length) {
 	Obj_String * string = ALLOCATE_OBJ(Obj_String, sizeof(char) * (length + 1), OBJ_STRING);
 	string->length = length;
@@ -30,9 +32,22 @@ static Obj_String * allocate_string(uint32_t length) {
 	return string;
 }
 
+static uint32_t hash_string(char const * chars, uint32_t length) {
+	// FNV-1a
+	// http://www.isthe.com/chongo/tech/comp/fnv/
+	// https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function
+	uint32_t hash = 2166136261u;
+	for (uint32_t i = 0; i < length; i++) {
+		hash ^= (uint8_t)chars[i];
+		hash *= 16777619u;
+	}
+	return hash;
+}
+
 Obj_String * copy_string(char const * chars, uint32_t length) {
 	Obj_String * string = allocate_string(length);
 	memcpy(string->chars, chars, length);
+	string->hash = hash_string(string->chars, length);
 	return string;
 }
 
@@ -64,6 +79,7 @@ Obj_String * strings_concatenate(Value value_a, Value value_b) {
 	Obj_String * string = allocate_string(length);
 	memcpy(string->chars, a_string->chars, sizeof(char) * a_string->length);
 	memcpy(string->chars + a_string->length, b_string->chars, sizeof(char) * b_string->length);
+	string->hash = hash_string(string->chars, length);
 	return string;
 }
 
