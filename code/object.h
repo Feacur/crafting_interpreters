@@ -15,7 +15,7 @@ struct Obj {
 typedef struct {
 	struct Obj obj;
 	uint32_t length;
-	char chars[];
+	char chars[FLEXIBLE_ARRAY];
 } Obj_String;
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
