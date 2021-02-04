@@ -32,7 +32,7 @@ void value_array_init(Value_Array * array) {
 }
 
 void value_array_free(Value_Array * array) {
-	FREE_ARRAY(Value, array->values, array->capacity);
+	FREE_ARRAY(array->values, array->capacity);
 	value_array_init(array);
 }
 
@@ -40,7 +40,7 @@ void value_array_write(Value_Array * array, Value value) {
 	if (array->capacity < array->count + 1) {
 		uint32_t old_capacity = array->capacity;
 		array->capacity = GROW_CAPACITY(old_capacity);
-		array->values = GROW_ARRAY(Value, array->values, old_capacity, array->capacity);
+		array->values = GROW_ARRAY(array->values, old_capacity, array->capacity);
 	}
 
 	array->values[array->count] = value;
