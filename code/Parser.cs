@@ -375,7 +375,7 @@ public class Parser
 		Advance();
 
 		while (!IsAtEnd()) {
-			if (PeekPrev().type == TokenType.SEMICOLON) { break; }
+			if (PeekPrev().type == TokenType.SEMICOLON) { return; }
 
 			switch (Peek().type) {
 				case TokenType.CLASS:
@@ -385,7 +385,7 @@ public class Parser
 				case TokenType.IF:
 				case TokenType.WHILE:
 				case TokenType.RETURN:
-					break;
+					return;
 			}
 
 			Advance();
