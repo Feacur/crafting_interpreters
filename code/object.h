@@ -33,7 +33,6 @@ inline static bool is_obj_type(Value value, Obj_Type type) {
 }
 
 void print_object(Value value);
-bool objects_equal(Value a, Value b);
 struct Obj_String * strings_concatenate(Value a, Value b);
 
 void object_free(struct Obj * object);

@@ -1,7 +1,7 @@
 #if !defined(LOX_VM)
 #define LOX_VM
 
-#include "value.h"
+#include "table.h"
 
 #define STACK_MAX 256
 
@@ -12,6 +12,7 @@ struct VM {
 	uint8_t * ip;
 	Value stack[STACK_MAX];
 	Value * stack_top;
+	Table strings;
 	struct Obj * objects;
 };
 

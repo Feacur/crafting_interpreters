@@ -43,6 +43,7 @@ void vm_init(void) {
 }
 
 void vm_free(void) {
+	table_free(&vm.strings);
 	objects_free();
 }
 

@@ -25,11 +25,17 @@ static Entry * find_entry(Entry * entries, uint32_t capacity, Obj_String * key) 
 	Entry* empty = NULL;
 	for (uint32_t i = 0; i < capacity; i++) {
 		Entry * entry = &entries[(index + i) % capacity];
-		if (entry->key == key) { return entry; }
 		if (entry->key == NULL) {
 			if (empty == NULL) { empty = entry; }
 			if (IS_NIL(entry->value)) { break; }
+			continue;
 		}
+		if (entry->key == key) { return entry; }
+		// rely on strings interning
+		// if (entry->key->hash != key->hash) { continue; }
+		// if (entry->key->length != key->length) { continue; }
+		// if (memcmp(entry->key->chars, key->chars, sizeof(char) * key->length) != 0) { continue; }
+		// return entry;
 	}
 	return empty;
 }
@@ -101,3 +107,43 @@ void table_add_all(Table * table, Table * to) {
 		table_set(to, entry->key, entry->value);
 	}
 }
+
+struct Obj_String * table_find_key(Table * table, char const * chars, uint32_t length, uint32_t hash) {
+	if (table->count == 0) { return false; }
+
+	uint32_t index = hash % table->capacity;
+	for (uint32_t i = 0; i < table->capacity; i++) {
+		Entry * entry = &table->entries[(index + i) % table->capacity];
+		if (entry->key == NULL) {
+			if (IS_NIL(entry->value)) { break; }
+			continue;
+		}
+		if (entry->key->hash != hash) { continue; }
+		if (entry->key->length != length) { continue; }
+		if (memcmp(entry->key->chars, chars, sizeof(char) * length) != 0) { continue; }
+		return entry->key;
+	}
+	return NULL;
+}
+
+struct Obj_String * table_find_key_2(Table * table, char const * a_chars, uint32_t a_length, char const * b_chars, uint32_t b_length, uint32_t hash) {
+	if (table->count == 0) { return false; }
+
+	uint32_t length = a_length + b_length;
+
+	uint32_t index = hash % table->capacity;
+	for (uint32_t i = 0; i < table->capacity; i++) {
+		Entry * entry = &table->entries[(index + i) % table->capacity];
+		if (entry->key == NULL) {
+			if (IS_NIL(entry->value)) { break; }
+			continue;
+		}
+		if (entry->key->hash != hash) { continue; }
+		if (entry->key->length != length) { continue; }
+		if (memcmp(entry->key->chars, a_chars, sizeof(char) * a_length) != 0) { continue; }
+		if (memcmp(entry->key->chars + a_length, b_chars, sizeof(char) * b_length) != 0) { continue; }
+		return entry->key;
+	}
+	return NULL;
+}
+
