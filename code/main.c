@@ -59,7 +59,6 @@ static void repl(void) {
 }
 
 int main (int argc, char * argv[]) {
-	(void)argc; (void)argv;
 	vm_init();
 
 	if (argc == 1) {
@@ -73,6 +72,5 @@ int main (int argc, char * argv[]) {
 	}
 
 	vm_free();
-	(void)getchar();
 	return 0;
 }

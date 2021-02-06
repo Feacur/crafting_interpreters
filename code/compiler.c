@@ -88,6 +88,29 @@ static void compiler_advance(void) {
 	}
 }
 
+static void syncronize(void) {
+	parser.panic_mode = false;
+
+	while (parser.current.type != TOKEN_EOF) {
+		if (parser.previous.type == TOKEN_SEMICOLON) { return; }
+
+		switch (parser.current.type) {
+			case TOKEN_CLASS:
+			case TOKEN_FUN:
+			case TOKEN_VAR:
+			case TOKEN_FOR:
+			case TOKEN_IF:
+			case TOKEN_WHILE:
+			case TOKEN_PRINT:
+			case TOKEN_RETURN:
+				return;
+			default: break;
+		}
+
+		compiler_advance();
+	}
+}
+
 static void consume(Token_Type type, char const * message) {
 	if (parser.current.type == type) {
 		compiler_advance();
@@ -95,6 +118,12 @@ static void consume(Token_Type type, char const * message) {
 	}
 
 	error_at_current(message);
+}
+
+static bool match(Token_Type type) {
+	if (parser.current.type != type) { return false; }
+	compiler_advance();
+	return true;
 }
 
 // emitting
@@ -129,7 +158,7 @@ static void compiler_end(void) {
 #endif // DEBUG_PRINT_CODE
 }
 
-// parsing
+// helpers
 static Parse_Rule * get_rule(Token_Type type);
 static void parse_presedence(Precedence precedence) {
 	(void)precedence;
@@ -149,6 +178,25 @@ static void parse_presedence(Precedence precedence) {
 	}
 }
 
+static uint8_t identifier_constant(Token * name) {
+	return make_constant(TO_OBJ(copy_string(name->start, name->length)));
+}
+
+static uint8_t parse_variable(char const * error_message) {
+	consume(TOKEN_IDENTIFIER, error_message);
+	return identifier_constant(&parser.previous);
+}
+
+static void define_variable(uint8_t global) {
+	emit_bytes(OP_DEFINE_GLOBAL, global);
+}
+
+static void named_variable(Token name) {
+	uint8_t arg = identifier_constant(&name);
+	emit_bytes(OP_GET_GLOBAL, arg);
+}
+
+// parsing
 static void do_expression(void) {
 	parse_presedence(PREC_ASSIGNMENT);
 }
@@ -210,9 +258,60 @@ static void do_string(void) {
 	));
 }
 
+static void do_variable(void) {
+	named_variable(parser.previous);
+}
+
 static void do_grouping(void) {
 	do_expression();
 	consume(TOKEN_RIGHT_PAREN, "expected a ')");
+}
+
+static void do_print_statement(void) {
+	do_expression();
+	consume(TOKEN_SEMICOLON, "expected a ';'");
+	emit_byte(OP_PRINT);
+}
+
+static void  do_expression_statement() {
+	do_expression();
+	consume(TOKEN_SEMICOLON, "expected a ';'");
+	emit_byte(OP_POP);
+}
+
+static void do_statement(void) {
+	if (match(TOKEN_PRINT)) {
+		do_print_statement();
+	}
+	else {
+		do_expression_statement();
+	}
+}
+
+static void do_var_declaration(void) {
+	uint8_t global = parse_variable("expected a variable name");
+
+	if (match(TOKEN_EQUAL)) {
+		do_expression();
+	}
+	else {
+		emit_byte(OP_NIL);
+	}
+
+	consume(TOKEN_SEMICOLON, "expected a ';");
+
+	define_variable(global);
+}
+
+static void do_declaration(void) {
+	if (match(TOKEN_VAR)) {
+		do_var_declaration();
+	}
+	else {
+		do_statement();
+	}
+
+	if (parser.panic_mode) { syncronize(); }
 }
 
 //
@@ -224,9 +323,11 @@ bool compile(char const * source, Chunk * chunk) {
 	parser.panic_mode = false;
 
 	compiler_advance();
-	do_expression();
-	consume(TOKEN_EOF, "expected the end of an expression");
+	while (!match(TOKEN_EOF)) {
+		do_declaration();
+	}
 	compiler_end();
+
 	return !parser.had_error;
 }
 
@@ -251,7 +352,7 @@ static Parse_Rule rules[] = {
 	[TOKEN_GREATER_EQUAL] = {NULL,        do_binary, PREC_COMPARISON},
 	[TOKEN_LESS]          = {NULL,        do_binary, PREC_COMPARISON},
 	[TOKEN_LESS_EQUAL]    = {NULL,        do_binary, PREC_COMPARISON},
-	// [TOKEN_IDENTIFIER]    = {NULL,        NULL,      PREC_NONE},
+	[TOKEN_IDENTIFIER]    = {do_variable, NULL,      PREC_NONE},
 	[TOKEN_STRING]        = {do_string,   NULL,      PREC_NONE},
 	[TOKEN_NUMBER]        = {do_number,   NULL,      PREC_NONE},
 	// [TOKEN_AND]           = {NULL,        NULL,      PREC_NONE},
