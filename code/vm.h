@@ -3,8 +3,6 @@
 
 #include "table.h"
 
-#define STACK_MAX 256
-
 struct Chunk;
 
 struct VM {

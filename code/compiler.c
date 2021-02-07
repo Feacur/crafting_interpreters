@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "chunk.h"
 #include "object.h"
@@ -39,7 +40,19 @@ typedef struct {
 	Precedence precedence;
 } Parse_Rule;
 
+typedef struct {
+	Token name;
+	uint32_t depth;
+} Local;
+
+typedef struct {
+	Local locals[LOCALS_MAX];
+	uint32_t local_count;
+	uint32_t scope_depth;
+} Compiler;
+
 static Parser parser;
+static Compiler * current_compiler = NULL;
 
 typedef struct Chunk Chunk;
 
@@ -126,6 +139,11 @@ static bool match(Token_Type type) {
 	return true;
 }
 
+static bool identifiers_equal(Token * a, Token * b) {
+	if (a->length != b->length) { return false; }
+	return memcmp(a->start, b->start, sizeof(char) * a->length) == 0;
+}
+
 // emitting
 static uint8_t make_constant(Value value) {
 	uint32_t constant = chunk_add_constant(current_chunk(), value);
@@ -149,6 +167,12 @@ static void emit_constant(Value value) {
 	emit_bytes(OP_CONSTANT, make_constant(value));
 }
 
+static void compiler_init(Compiler * compiler) {
+	compiler->local_count = 0;
+	compiler->scope_depth = 0;
+	current_compiler = compiler;
+}
+
 static void compiler_end(void) {
 	emit_byte(OP_RETURN);
 #if defined(DEBUG_PRINT_CODE)
@@ -158,7 +182,7 @@ static void compiler_end(void) {
 #endif // DEBUG_PRINT_CODE
 }
 
-// helpers
+// parsing
 static Parse_Rule * get_rule(Token_Type type);
 static void parse_presedence(Precedence precedence) {
 	(void)precedence;
@@ -187,12 +211,43 @@ static uint8_t identifier_constant(Token * name) {
 	return make_constant(TO_OBJ(copy_string(name->start, name->length)));
 }
 
+static void add_local(Token name) {
+	if (current_compiler->local_count == LOCALS_MAX) {
+		error("too many local variables");
+		return;
+	}
+	Local * local = &current_compiler->locals[current_compiler->local_count++];
+	local->name = name;
+	local->depth = current_compiler->scope_depth;
+}
+
+static void declare_variable(void) {
+	if (current_compiler->scope_depth == 0) { return; }
+	Token * name = &parser.previous;
+	for (uint32_t i = current_compiler->local_count; i-- > 0;) {
+		Local * local = &current_compiler->locals[i];
+		if (local->depth != UINT32_MAX && local->depth < current_compiler->scope_depth) {
+			break;
+		}
+
+		if (identifiers_equal(name, &local->name)) {
+			error("a varaible redeclaration");
+		}
+	}
+	add_local(*name);
+}
+
 static uint8_t parse_variable(char const * error_message) {
 	consume(TOKEN_IDENTIFIER, error_message);
+
+	declare_variable();
+	if (current_compiler->scope_depth > 0) { return 0; }
+
 	return identifier_constant(&parser.previous);
 }
 
 static void define_variable(uint8_t global) {
+	if (current_compiler->scope_depth > 0) { return; }
 	emit_bytes(OP_DEFINE_GLOBAL, global);
 }
 
@@ -208,7 +263,7 @@ static void named_variable(Token name, bool can_assign) {
 	}
 }
 
-// parsing
+// expressions
 static void do_expression(void) {
 	parse_presedence(PREC_ASSIGNMENT);
 }
@@ -285,6 +340,7 @@ static void do_grouping(bool can_assign) {
 	consume(TOKEN_RIGHT_PAREN, "expected a ')");
 }
 
+// statements
 static void do_print_statement(void) {
 	do_expression();
 	consume(TOKEN_SEMICOLON, "expected a ';'");
@@ -297,9 +353,35 @@ static void  do_expression_statement(void) {
 	emit_byte(OP_POP);
 }
 
+static void begin_scope(void) {
+	current_compiler->scope_depth++;
+}
+
+static void end_scope(void) {
+	current_compiler->scope_depth--;
+
+	while (current_compiler->local_count > 0 && current_compiler->locals[current_compiler->local_count - 1].depth > current_compiler->scope_depth) {
+		emit_byte(OP_POP);
+		current_compiler->local_count--;
+	}
+}
+
+static void do_declaration(void);
+static void do_block(void) {
+	while (parser.current.type != TOKEN_EOF && parser.current.type != TOKEN_RIGHT_BRACE) {
+		do_declaration();
+	}
+	consume(TOKEN_RIGHT_BRACE, "expected a '}");
+}
+
 static void do_statement(void) {
 	if (match(TOKEN_PRINT)) {
 		do_print_statement();
+	}
+	else if (match(TOKEN_LEFT_BRACE)) {
+		begin_scope();
+		do_block();
+		end_scope();
 	}
 	else {
 		do_expression_statement();
@@ -335,6 +417,10 @@ static void do_declaration(void) {
 //
 bool compile(char const * source, Chunk * chunk) {
 	scanner_init(source);
+
+	Compiler compiler;
+	compiler_init(&compiler);
+
 	compiling_chunk = chunk;
 
 	parser.had_error = false;
