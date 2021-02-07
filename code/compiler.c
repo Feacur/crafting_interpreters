@@ -167,6 +167,32 @@ static void emit_constant(Value value) {
 	emit_bytes(OP_CONSTANT, make_constant(value));
 }
 
+static uint32_t emit_jump(Op_Code instruction) {
+	emit_byte((uint8_t)instruction);
+	emit_byte(0xff);
+	emit_byte(0xff);
+	return current_chunk()->count - 2;
+}
+
+static void patch_jump(uint32_t target) {
+	uint32_t jump = current_chunk()->count - target - 2;
+	if (jump > UINT16_MAX) {
+		error("too much code to jump over");
+	}
+	current_chunk()->code[target] = (jump >> 8) & 0xff;
+	current_chunk()->code[target + 1] = jump & 0xff;
+}
+
+static void emit_loop(uint32_t target) {
+	emit_byte(OP_LOOP);
+	uint32_t loop = current_chunk()->count - target + 2;
+	if (loop > UINT16_MAX) {
+		error("too much code to loop over");
+	}
+	emit_byte((loop >> 8) & 0xff);
+	emit_byte(loop & 0xff);
+}
+
 static void compiler_init(Compiler * compiler) {
 	compiler->local_count = 0;
 	compiler->scope_depth = 0;
@@ -273,7 +299,7 @@ static void define_variable(uint8_t global) {
 
 static void do_expression(void);
 static void named_variable(Token name, bool can_assign) {
-	uint8_t get_op, set_op;
+	Op_Code get_op, set_op;
 	uint32_t arg = resolve_local(current_compiler, &name);
 	if (arg != UINT32_MAX) {
 		get_op = OP_GET_LOCAL;
@@ -287,10 +313,10 @@ static void named_variable(Token name, bool can_assign) {
 
 	if (can_assign && match(TOKEN_EQUAL)) {
 		do_expression();
-		emit_bytes(set_op, (uint8_t)arg);
+		emit_bytes((uint8_t)set_op, (uint8_t)arg);
 	}
 	else {
-		emit_bytes(get_op, (uint8_t)arg);
+		emit_bytes((uint8_t)get_op, (uint8_t)arg);
 	}
 }
 
@@ -316,6 +342,26 @@ static void do_unary(bool can_assign) {
 		case TOKEN_MINUS: emit_byte(OP_NEGATE); break;
 		default: return; // unreachable
 	}
+}
+
+static void do_and(bool can_assign) {
+	(void)can_assign;
+	uint32_t end_jump = emit_jump(OP_JUMP_IF_FALSE);
+	emit_byte(OP_POP);
+	parse_presedence(PREC_AND);
+	patch_jump(end_jump);
+}
+
+static void do_or(bool can_assign) {
+	(void)can_assign;
+	uint32_t else_jump = emit_jump(OP_JUMP_IF_FALSE);
+	uint32_t end_jump = emit_jump(OP_JUMP);
+
+	patch_jump(else_jump);
+	emit_byte(OP_POP);
+
+	parse_presedence(PREC_OR);
+	patch_jump(end_jump);
 }
 
 static void do_binary(bool can_assign) {
@@ -384,6 +430,21 @@ static void  do_expression_statement(void) {
 	emit_byte(OP_POP);
 }
 
+static void do_var_declaration(void) {
+	uint8_t global = parse_variable("expected a variable name");
+
+	if (match(TOKEN_EQUAL)) {
+		do_expression();
+	}
+	else {
+		emit_byte(OP_NIL);
+	}
+
+	consume(TOKEN_SEMICOLON, "expected a ';");
+
+	define_variable(global);
+}
+
 static void begin_scope(void) {
 	current_compiler->scope_depth++;
 }
@@ -405,9 +466,106 @@ static void do_block(void) {
 	consume(TOKEN_RIGHT_BRACE, "expected a '}");
 }
 
+static void do_statement(void);
+static void do_if_statement(void) {
+	consume(TOKEN_LEFT_PAREN, "expected a '('");
+	do_expression();
+	consume(TOKEN_RIGHT_PAREN, "expected a ')'");
+
+	uint32_t then_jump = emit_jump(OP_JUMP_IF_FALSE);
+	emit_byte(OP_POP);
+	do_statement();
+	patch_jump(then_jump);
+
+	uint32_t else_jump = emit_jump(OP_JUMP);
+	emit_byte(OP_POP);
+	if (match(TOKEN_ELSE)) { do_statement(); }
+	patch_jump(else_jump);
+}
+
+static void do_while_statement(void) {
+	consume(TOKEN_LEFT_PAREN, "expected a '('");
+
+	uint32_t loop_start = current_chunk()->count;
+	printf("jump to %d\n", (uint32_t)(current_chunk()->count));
+	do_expression();
+
+	consume(TOKEN_RIGHT_PAREN, "expected a ')'");
+
+	uint32_t exit_jump = emit_jump(OP_JUMP_IF_FALSE);
+	emit_byte(OP_POP);
+
+	do_statement();
+	printf("jump from1 %d\n", (uint32_t)(current_chunk()->count));
+	emit_loop(loop_start);
+	printf("jump from2 %d\n", (uint32_t)(current_chunk()->count));
+
+	patch_jump(exit_jump);
+	emit_byte(OP_POP);
+}
+
+static void do_for_statement(void) {
+	begin_scope();
+
+	consume(TOKEN_LEFT_PAREN, "expected a '('");
+
+	if (match(TOKEN_SEMICOLON)) {
+		// no initializer
+	}
+	else if (match(TOKEN_VAR)) {
+		do_var_declaration();
+	}
+	else {
+		do_expression_statement();
+	}
+
+	uint32_t loop_start = current_chunk()->count;
+
+	uint32_t exit_jump = UINT32_MAX;
+	if (!match(TOKEN_SEMICOLON)) {
+		do_expression();
+		consume(TOKEN_SEMICOLON, "expected a ';'");
+
+		exit_jump = emit_jump(OP_JUMP_IF_FALSE);
+		emit_byte(OP_POP);
+	}
+
+	if (!match(TOKEN_RIGHT_PAREN)) {
+		uint32_t body_jump = emit_jump(OP_JUMP);
+		uint32_t per_loop_start = current_chunk()->count;
+
+		do_expression();
+		emit_byte(OP_POP);
+		consume(TOKEN_RIGHT_PAREN, "expected a ')'");
+
+		emit_loop(loop_start);
+		loop_start = per_loop_start;
+		patch_jump(body_jump);
+	}
+
+	do_statement();
+	emit_loop(loop_start);
+
+	if (exit_jump != UINT32_MAX) {
+		patch_jump(exit_jump);
+		emit_byte(OP_POP);
+	}
+
+	end_scope();
+}
+
 static void do_statement(void) {
 	if (match(TOKEN_PRINT)) {
 		do_print_statement();
+	}
+	else if (match(TOKEN_IF)) {
+		do_if_statement();
+	}
+	else if (match(TOKEN_WHILE)) {
+		do_while_statement();
+	}
+	else if (match(TOKEN_FOR)) {
+		do_for_statement();
 	}
 	else if (match(TOKEN_LEFT_BRACE)) {
 		begin_scope();
@@ -417,21 +575,6 @@ static void do_statement(void) {
 	else {
 		do_expression_statement();
 	}
-}
-
-static void do_var_declaration(void) {
-	uint8_t global = parse_variable("expected a variable name");
-
-	if (match(TOKEN_EQUAL)) {
-		do_expression();
-	}
-	else {
-		emit_byte(OP_NIL);
-	}
-
-	consume(TOKEN_SEMICOLON, "expected a ';");
-
-	define_variable(global);
 }
 
 static void do_declaration(void) {
@@ -490,7 +633,7 @@ static Parse_Rule rules[] = {
 	[TOKEN_IDENTIFIER]    = {do_variable, NULL,      PREC_NONE},
 	[TOKEN_STRING]        = {do_string,   NULL,      PREC_NONE},
 	[TOKEN_NUMBER]        = {do_number,   NULL,      PREC_NONE},
-	// [TOKEN_AND]           = {NULL,        NULL,      PREC_NONE},
+	[TOKEN_AND]           = {NULL,        do_and,    PREC_AND},
 	// [TOKEN_CLASS]         = {NULL,        NULL,      PREC_NONE},
 	// [TOKEN_ELSE]          = {NULL,        NULL,      PREC_NONE},
 	[TOKEN_FALSE]         = {do_literal,  NULL,      PREC_NONE},
@@ -498,7 +641,7 @@ static Parse_Rule rules[] = {
 	// [TOKEN_FUN]           = {NULL,        NULL,      PREC_NONE},
 	// [TOKEN_IF]            = {NULL,        NULL,      PREC_NONE},
 	[TOKEN_NIL]           = {do_literal,  NULL,      PREC_NONE},
-	// [TOKEN_OR]            = {NULL,        NULL,      PREC_NONE},
+	[TOKEN_OR]            = {NULL,        do_or,     PREC_OR},
 	// [TOKEN_PRINT]         = {NULL,        NULL,      PREC_NONE},
 	// [TOKEN_RETURN]        = {NULL,        NULL,      PREC_NONE},
 	// [TOKEN_SUPER]         = {NULL,        NULL,      PREC_NONE},

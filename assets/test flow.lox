@@ -1,0 +1,11 @@
+print "> while";
+var counter = 0;
+while (counter < 5) {
+	print counter;
+	counter = counter + 1;
+}
+
+print "> for";
+for (var i = 0; i < 5; i = i + 1) {
+	print i;
+}

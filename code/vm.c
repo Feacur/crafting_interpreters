@@ -57,7 +57,8 @@ static bool is_falsey(Value value) {
 typedef struct Obj_String Obj_String;
 
 static Interpret_Result run(void) {
-#define READ_BYTE() (*vm.ip++)
+#define READ_BYTE() (*(vm.ip++))
+#define READ_SHORT() (vm.ip += 2, (uint16_t)(vm.ip[-2] << 8) | (uint16_t)vm.ip[-1])
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 
@@ -74,7 +75,7 @@ static Interpret_Result run(void) {
 
 	for (;;) {
 #if defined(DEBUG_TRACE_EXECUTION)
-		printf("          ");
+		printf("  stack:  ");
 		for (Value * slot = vm.stack; slot < vm.stack_top; slot++) {
 			printf("[ ");
 			value_print(*slot);
@@ -84,7 +85,7 @@ static Interpret_Result run(void) {
 		chunk_disassemble_instruction(vm.chunk, (uint32_t)(vm.ip - vm.chunk->code));
 #endif // DEBUG_TRACE_EXECUTION
 
-		uint8_t instruction;
+		Op_Code instruction;
 		switch (instruction = READ_BYTE()) {
 			case OP_CONSTANT: {
 				Value constant = READ_CONSTANT();
@@ -164,19 +165,38 @@ static Interpret_Result run(void) {
 			case OP_MULTIPLY: OP_BINARY(TO_NUMBER, *); break;
 			case OP_DIVIDE:   OP_BINARY(TO_NUMBER, /); break;
 
-			case OP_NOT:
-				vm_stack_push(TO_BOOL(is_falsey(vm_stack_pop()))); break;
-			case OP_NEGATE:
+			case OP_NOT: vm_stack_push(TO_BOOL(is_falsey(vm_stack_pop()))); break;
+			case OP_NEGATE: {
 				if (!IS_NUMBER(vm_stack_peek(0))) {
 					runtime_error("operant must be a number");
 					return INTERPRET_RUNTIME_ERROR;
 				}
-				vm_stack_push(TO_NUMBER(-AS_NUMBER(vm_stack_pop()))); break;
+				vm_stack_push(TO_NUMBER(-AS_NUMBER(vm_stack_pop())));
+				break;
+			}
 
 			case OP_PRINT: {
 				value_print(vm_stack_pop());
 				printf("\n");
-				return INTERPRET_OK;
+				break;
+			}
+
+			case OP_LOOP: {
+				uint16_t offset = READ_SHORT();
+				vm.ip -= offset;
+				break;
+			}
+
+			case OP_JUMP: {
+				uint16_t offset = READ_SHORT();
+				vm.ip += offset;
+				break;
+			}
+
+			case OP_JUMP_IF_FALSE: {
+				uint16_t offset = READ_SHORT();
+				vm.ip += offset * is_falsey(vm_stack_peek(0));
+				break;
 			}
 
 			case OP_RETURN: {
@@ -187,6 +207,7 @@ static Interpret_Result run(void) {
 	}
 
 #undef READ_BYTE
+#undef READ_SHORT
 #undef READ_CONSTANT
 #undef READ_STRING
 #undef OP_BINARY
