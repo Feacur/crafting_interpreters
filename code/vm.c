@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 #include "object.h"
-#include "chunk.h"
 #include "compiler.h"
 #include "memory.h"
 #include "vm.h"
@@ -17,6 +16,7 @@ VM vm;
 
 static void stack_reset(void) {
 	vm.stack_top = vm.stack;
+	vm.frames_count = 0;
 }
 
 #if defined(__clang__) // clang: argument 1 of 2 is a printf-like format literal
@@ -30,8 +30,9 @@ static void runtime_error(char const * format, ...) {
 
 	fputs("\n", stderr);
 
-	size_t instruction = (size_t)(vm.ip - vm.chunk->code - 1);
-	uint32_t line =  vm.chunk->lines[instruction];
+	Call_Frame * frame = &vm.frames[vm.frames_count - 1];
+	size_t instruction = (size_t)(frame->ip - frame->function->chunk.code - 1);
+	uint32_t line =  frame->function->chunk.lines[instruction];
 	fprintf(stderr, "[line %d] in script\n", line);
 
 	stack_reset();
@@ -57,9 +58,11 @@ static bool is_falsey(Value value) {
 typedef struct Obj_String Obj_String;
 
 static Interpret_Result run(void) {
-#define READ_BYTE() (*(vm.ip++))
-#define READ_SHORT() (vm.ip += 2, (uint16_t)(vm.ip[-2] << 8) | (uint16_t)vm.ip[-1])
-#define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+	Call_Frame * frame = &vm.frames[vm.frames_count - 1];
+
+#define READ_BYTE() (*(frame->ip++))
+#define READ_SHORT() (frame->ip += 2, (uint16_t)(frame->ip[-2] << 8) | (uint16_t)frame->ip[-1])
+#define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 
 #define OP_BINARY(to_value, op) \
@@ -82,7 +85,7 @@ static Interpret_Result run(void) {
 			printf(" ]");
 		}
 		printf("\n");
-		chunk_disassemble_instruction(vm.chunk, (uint32_t)(vm.ip - vm.chunk->code));
+		chunk_disassemble_instruction(&frame->function->chunk, (uint32_t)(frame->ip - frame->function->chunk.code));
 #endif // DEBUG_TRACE_EXECUTION
 
 		Op_Code instruction;
@@ -101,13 +104,13 @@ static Interpret_Result run(void) {
 
 			case OP_SET_LOCAL: {
 				uint8_t slot = READ_BYTE();
-				vm.stack[slot] = vm_stack_peek(0);
+				frame->slots[slot] = vm_stack_peek(0);
 				break;
 			}
 
 			case OP_GET_LOCAL: {
 				uint8_t slot = READ_BYTE();
-				vm_stack_push(vm.stack[slot]);
+				vm_stack_push(frame->slots[slot]);
 				break;
 			}
 
@@ -183,19 +186,19 @@ static Interpret_Result run(void) {
 
 			case OP_LOOP: {
 				uint16_t offset = READ_SHORT();
-				vm.ip -= offset;
+				frame->ip -= offset;
 				break;
 			}
 
 			case OP_JUMP: {
 				uint16_t offset = READ_SHORT();
-				vm.ip += offset;
+				frame->ip += offset;
 				break;
 			}
 
 			case OP_JUMP_IF_FALSE: {
 				uint16_t offset = READ_SHORT();
-				vm.ip += offset * is_falsey(vm_stack_peek(0));
+				frame->ip += offset * is_falsey(vm_stack_peek(0));
 				break;
 			}
 
@@ -215,29 +218,8 @@ static Interpret_Result run(void) {
 
 typedef struct Chunk Chunk;
 
-Interpret_Result vm_interpret_chunk(Chunk * chunk) {
-	vm.chunk = chunk;
-	vm.ip = vm.chunk->code;
-	return run();
-}
-
-Interpret_Result vm_interpret(char const * source) {
-	Chunk chunk;
-	chunk_init(&chunk);
-
-	if (!compile(source, &chunk)) {
-		chunk_free(&chunk);
-		return INTERPRET_COMPILE_ERROR;
-	}
-
-	vm.chunk = &chunk;
-	vm.ip = vm.chunk->code;
-
-	Interpret_Result result = run();
-
-	chunk_free(&chunk);
-	return result;
-}
+typedef struct Obj Obj;
+typedef struct Obj_Function Obj_Function;
 
 void vm_stack_push(Value value) {
 	*vm.stack_top = value;
@@ -251,4 +233,18 @@ Value vm_stack_pop(void) {
 
 Value vm_stack_peek(uint32_t distance) {
 	return vm.stack_top[-(int32_t)(distance + 1)];
+}
+
+Interpret_Result vm_interpret(char const * source) {
+	Obj_Function * function = compile(source);
+	if (function == NULL) { return INTERPRET_COMPILE_ERROR; }
+
+	vm_stack_push(TO_OBJ(function));
+
+	Call_Frame * frame = &vm.frames[vm.frames_count++];
+	frame->function = function;
+	frame->ip = function->chunk.code;
+	frame->slots = vm.stack;
+
+	return run();
 }

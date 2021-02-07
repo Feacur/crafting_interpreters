@@ -60,11 +60,23 @@ Obj_String * copy_string(char const * chars, uint32_t length) {
 	return string;
 }
 
+typedef struct Obj_Function Obj_Function;
+
 void print_object(Value value) {
 	switch (OBJ_TYPE(value)) {
 		case OBJ_STRING:
-			printf("%s", AS_CSTRING(value));
+			printf("%s", AS_STRING(value)->chars);
 			break;
+		case OBJ_FUNCTION: {
+			Obj_Function * function = AS_FUNCTION(value);
+			if (function->name == NULL) {
+				printf("<script>");
+			}
+			else {
+				printf("<fn %s>", AS_FUNCTION(value)->name->chars);
+			}
+			break;
+		}
 	}
 }
 
@@ -86,11 +98,25 @@ Obj_String * strings_concatenate(Value value_a, Value value_b) {
 	return string;
 }
 
+Obj_Function * new_function(void) {
+	Obj_Function * function = ALLOCATE_OBJ(Obj_Function, 0, OBJ_FUNCTION);
+	function->arity = 0;
+	function->name = NULL;
+	chunk_init(&function->chunk);
+	return function;
+}
+
 void object_free(struct Obj * object) {
 	switch (object->type) {
 		case OBJ_STRING: {
 			Obj_String * string = (Obj_String *)object;
 			FREE_OBJ(string, sizeof(char) * string->length);
+			break;
+		}
+		case OBJ_FUNCTION: {
+			Obj_Function * function = (Obj_Function *)object;
+			chunk_free(&function->chunk);
+			FREE_OBJ(function, 0);
 			break;
 		}
 	}

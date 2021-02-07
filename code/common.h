@@ -8,8 +8,9 @@
 #define DEBUG_PRINT_CODE
 #define DEBUG_TRACE_EXECUTION
 
-#define STACK_MAX (UINT8_MAX + 1)
+#define MAX_FRAMES 64
 #define LOCALS_MAX (UINT8_MAX + 1)
+#define STACK_MAX (MAX_FRAMES * LOCALS_MAX)
 
 #if defined(_MSC_VER ) || __STDC_VERSION__ < 199901L
 	#define FLEXIBLE_ARRAY 1
