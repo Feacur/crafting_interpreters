@@ -21,6 +21,13 @@ static uint32_t constant_instruction(char const * name, Chunk * chunk, uint32_t 
 	return offset + 2;
 }
 
+static uint32_t byte_instruction(char const * name, Chunk * chunk, uint32_t offset) {
+	uint8_t slot = chunk->code[offset + 1];
+	printf("%-16s %4d '", name, slot);
+	printf("'\n");
+	return offset + 2;
+}
+
 static uint32_t simple_instruction(char const * name, uint32_t offset) {
 	printf("%s\n", name);
 	return offset + 1;
@@ -39,6 +46,10 @@ uint32_t chunk_disassemble_instruction(Chunk * chunk, uint32_t offset) {
 	switch (instruction) {
 		case OP_CONSTANT:
 			return constant_instruction("OP_CONSTANT", chunk, offset);
+		case OP_SET_LOCAL:
+			return byte_instruction("OP_SET_LOCAL", chunk, offset);
+		case OP_GET_LOCAL:
+			return byte_instruction("OP_GET_LOCAL", chunk, offset);
 		case OP_SET_GLOBAL:
 			return constant_instruction("OP_SET_GLOBAL", chunk, offset);
 		case OP_GET_GLOBAL:

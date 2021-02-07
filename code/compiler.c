@@ -211,6 +211,19 @@ static uint8_t identifier_constant(Token * name) {
 	return make_constant(TO_OBJ(copy_string(name->start, name->length)));
 }
 
+static uint32_t resolve_local(Compiler * compiler, Token * name) {
+	for (uint32_t i = compiler->local_count; i-- > 0;) {
+		Local * local = &compiler->locals[i];
+		if (identifiers_equal(name, &local->name)) {
+			if (local->depth == UINT32_MAX) {
+				error("can't read local variable in its own initializer");
+			}
+			return i;
+		}
+	}
+	return UINT32_MAX;
+}
+
 static void add_local(Token name) {
 	if (current_compiler->local_count == LOCALS_MAX) {
 		error("too many local variables");
@@ -218,7 +231,7 @@ static void add_local(Token name) {
 	}
 	Local * local = &current_compiler->locals[current_compiler->local_count++];
 	local->name = name;
-	local->depth = current_compiler->scope_depth;
+	local->depth = UINT32_MAX;
 }
 
 static void declare_variable(void) {
@@ -246,20 +259,38 @@ static uint8_t parse_variable(char const * error_message) {
 	return identifier_constant(&parser.previous);
 }
 
+static void mark_initialized(void) {
+	current_compiler->locals[current_compiler->local_count - 1].depth = current_compiler->scope_depth;
+}
+
 static void define_variable(uint8_t global) {
-	if (current_compiler->scope_depth > 0) { return; }
+	if (current_compiler->scope_depth > 0) {
+		mark_initialized();
+		return;
+	}
 	emit_bytes(OP_DEFINE_GLOBAL, global);
 }
 
 static void do_expression(void);
 static void named_variable(Token name, bool can_assign) {
-	uint8_t arg = identifier_constant(&name);
-	if (can_assign && match(TOKEN_EQUAL)) {
-		do_expression();
-		emit_bytes(OP_SET_GLOBAL, arg);
+	uint8_t get_op, set_op;
+	uint32_t arg = resolve_local(current_compiler, &name);
+	if (arg != UINT32_MAX) {
+		get_op = OP_GET_LOCAL;
+		set_op = OP_SET_LOCAL;
 	}
 	else {
-		emit_bytes(OP_GET_GLOBAL, arg);
+		arg = identifier_constant(&name);
+		get_op = OP_GET_GLOBAL;
+		set_op = OP_SET_GLOBAL;
+	}
+
+	if (can_assign && match(TOKEN_EQUAL)) {
+		do_expression();
+		emit_bytes(set_op, (uint8_t)arg);
+	}
+	else {
+		emit_bytes(get_op, (uint8_t)arg);
 	}
 }
 

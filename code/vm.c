@@ -98,6 +98,18 @@ static Interpret_Result run(void) {
 
 			case OP_POP: vm_stack_pop(); break;
 
+			case OP_SET_LOCAL: {
+				uint8_t slot = READ_BYTE();
+				vm.stack[slot] = vm_stack_peek(0);
+				break;
+			}
+
+			case OP_GET_LOCAL: {
+				uint8_t slot = READ_BYTE();
+				vm_stack_push(vm.stack[slot]);
+				break;
+			}
+
 			case OP_SET_GLOBAL: {
 				Obj_String * name = READ_STRING();
 				if (table_set(&vm.globals, name, vm_stack_peek(0))) {
