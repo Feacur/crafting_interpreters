@@ -14,8 +14,8 @@ typedef struct {
 struct Chunk;
 
 struct VM {
-	Call_Frame frames[MAX_FRAMES];
-	uint32_t frames_count;
+	Call_Frame frames[FRAMES_MAX];
+	uint32_t frame_count;
 
 	Value stack[STACK_MAX];
 	Value * stack_top;

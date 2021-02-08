@@ -22,7 +22,7 @@ struct Obj_String {
 
 struct Obj_Function {
 	struct Obj obj;
-	uint32_t arity;
+	uint8_t arity;
 	struct Chunk chunk;
 	struct Obj_String * name;
 };

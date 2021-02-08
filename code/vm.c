@@ -16,8 +16,10 @@ VM vm;
 
 static void stack_reset(void) {
 	vm.stack_top = vm.stack;
-	vm.frames_count = 0;
+	vm.frame_count = 0;
 }
+
+typedef struct Obj_Function Obj_Function;
 
 #if defined(__clang__) // clang: argument 1 of 2 is a printf-like format literal
 __attribute__((format(printf, 1, 2)))
@@ -30,10 +32,18 @@ static void runtime_error(char const * format, ...) {
 
 	fputs("\n", stderr);
 
-	Call_Frame * frame = &vm.frames[vm.frames_count - 1];
-	size_t instruction = (size_t)(frame->ip - frame->function->chunk.code - 1);
-	uint32_t line =  frame->function->chunk.lines[instruction];
-	fprintf(stderr, "[line %d] in script\n", line);
+	for (uint32_t i = vm.frame_count; i-- > 0;) {
+		Call_Frame * frame = &vm.frames[i];
+		Obj_Function * function = frame->function;
+		size_t instruction = (size_t)(frame->ip - function->chunk.code - 1);
+		fprintf(stderr, "[line %d] in ", function->chunk.lines[instruction]);
+		if (function->name == NULL) {
+			fprintf(stderr, "script\n");
+		}
+		else {
+			fprintf(stderr, "%s()\n", function->name->chars);
+		}
+	}
 
 	stack_reset();
 }
@@ -55,10 +65,43 @@ static bool is_falsey(Value value) {
 	return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
 }
 
+static bool call_function(Obj_Function * function, uint8_t arg_count) {
+	if (arg_count != function->arity) {
+		runtime_error("expected %d arguments, but got %d", function->arity, arg_count);
+		return false;
+	}
+
+	if (vm.frame_count == FRAMES_MAX) {
+		runtime_error("stack overflow");
+		return false;
+	}
+
+	Call_Frame * frame = &vm.frames[vm.frame_count++];
+	frame->function = function;
+	frame->ip = function->chunk.code;
+
+	frame->slots = vm.stack_top - arg_count - 1;
+
+	return true;
+}
+
+static bool call_value(Value callee, uint8_t arg_count) {
+	if (IS_OBJ(callee)) {
+		switch (OBJ_TYPE(callee)) {
+			case OBJ_FUNCTION:
+				return call_function(AS_FUNCTION(callee), arg_count);
+			default: break;
+		}
+	}
+
+	runtime_error("can only call functions and classes");
+	return false;
+}
+
 typedef struct Obj_String Obj_String;
 
 static Interpret_Result run(void) {
-	Call_Frame * frame = &vm.frames[vm.frames_count - 1];
+	Call_Frame * frame = &vm.frames[vm.frame_count - 1];
 
 #define READ_BYTE() (*(frame->ip++))
 #define READ_SHORT() (frame->ip += 2, (uint16_t)(frame->ip[-2] << 8) | (uint16_t)frame->ip[-1])
@@ -202,9 +245,29 @@ static Interpret_Result run(void) {
 				break;
 			}
 
+			case OP_CALL: {
+				uint8_t arg_count = READ_BYTE();
+				if (!call_value(vm_stack_peek(arg_count), arg_count)) {
+					return INTERPRET_RUNTIME_ERROR;
+				}
+				frame = &vm.frames[vm.frame_count - 1];
+				break;
+			}
+
 			case OP_RETURN: {
-				// exit
-				return INTERPRET_OK;
+				Value result = vm_stack_pop();
+
+				vm.frame_count--;
+				if (vm.frame_count == 0) {
+					vm_stack_pop();
+					return INTERPRET_OK;
+				}
+
+				vm.stack_top = frame->slots;
+				vm_stack_push(result);
+
+				frame = &vm.frames[vm.frame_count - 1];
+				break;
 			}
 		}
 	}
@@ -219,7 +282,6 @@ static Interpret_Result run(void) {
 typedef struct Chunk Chunk;
 
 typedef struct Obj Obj;
-typedef struct Obj_Function Obj_Function;
 
 void vm_stack_push(Value value) {
 	*vm.stack_top = value;
@@ -240,11 +302,7 @@ Interpret_Result vm_interpret(char const * source) {
 	if (function == NULL) { return INTERPRET_COMPILE_ERROR; }
 
 	vm_stack_push(TO_OBJ(function));
-
-	Call_Frame * frame = &vm.frames[vm.frames_count++];
-	frame->function = function;
-	frame->ip = function->chunk.code;
-	frame->slots = vm.stack;
+	call_function(function, 0);
 
 	return run();
 }

@@ -47,7 +47,7 @@ uint32_t chunk_disassemble_instruction(Chunk * chunk, uint32_t offset) {
 		printf("%04d ", chunk->lines[offset]);
 	}
 
-	uint8_t instruction = chunk->code[offset];
+	Op_Code instruction = chunk->code[offset];
 	switch (instruction) {
 		case OP_CONSTANT:
 			return constant_instruction("OP_CONSTANT", chunk, offset);
@@ -55,6 +55,8 @@ uint32_t chunk_disassemble_instruction(Chunk * chunk, uint32_t offset) {
 			return byte_instruction("OP_SET_LOCAL", chunk, offset);
 		case OP_GET_LOCAL:
 			return byte_instruction("OP_GET_LOCAL", chunk, offset);
+		case OP_CALL:
+			return byte_instruction("OP_CALL", chunk, offset);
 		case OP_SET_GLOBAL:
 			return constant_instruction("OP_SET_GLOBAL", chunk, offset);
 		case OP_GET_GLOBAL:
@@ -97,8 +99,8 @@ uint32_t chunk_disassemble_instruction(Chunk * chunk, uint32_t offset) {
 			return jump_instruction("OP_JUMP_IF_FALSE", 1, chunk, offset);
 		case OP_RETURN:
 			return simple_instruction("OP_RETURN", offset);
-		default:
-			printf("unknown opcode %d\n", instruction);
-			return offset + 1;
 	}
+
+	printf("unknown opcode %d\n", instruction);
+	return offset + 1;
 }

@@ -1,13 +1,18 @@
+print "> nest";
 fun first() {
-	var a = 1;
-	second();
-	var b = 2;
+	print "first";
 	second();
 }
 
 fun second() {
-	var c = 3;
-	var d = 4;
+	print "second";
 }
 
 first();
+
+print "> sum";
+fun sum(a, b, c) {
+  return a + b + c;
+}
+
+print 4 + sum(5, 6, 7);

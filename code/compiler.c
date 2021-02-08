@@ -51,7 +51,8 @@ typedef enum {
 
 typedef struct Obj_Function Obj_Function;
 
-typedef struct {
+typedef struct Compiler {
+	struct Compiler * enclosing;
 	Obj_Function * function;
 	Function_Type type;
 	Local locals[LOCALS_MAX];
@@ -154,7 +155,7 @@ static bool identifiers_equal(Token * a, Token * b) {
 // emitting
 static uint8_t make_constant(Value value) {
 	uint32_t constant = chunk_add_constant(current_chunk(), value);
-	if (constant > UINT8_MAX) {
+	if (constant == LOCALS_MAX) {
 		error("too many constant in one chunk");
 		return 0;
 	}
@@ -201,29 +202,37 @@ static void emit_loop(uint32_t target) {
 }
 
 static void compiler_init(Compiler * compiler, Function_Type type) {
+	compiler->enclosing = current_compiler;
 	compiler->function = new_function();
 	compiler->type = type;
 	compiler->local_count = 0;
 	compiler->scope_depth = 0;
-	current_compiler = compiler;
 
-	Local * local = &current_compiler->locals[current_compiler->local_count++];
+	if (type != TYPE_SCRIPT) {
+		compiler->function->name = copy_string(parser.previous.start, parser.previous.length);
+	}
+
+	Local * local = &compiler->locals[compiler->local_count++];
 	local->depth = 0;
 	local->name.start = "";
 	local->name.length = 0;
+
+	current_compiler = compiler;
 }
 
 static Obj_Function * compiler_end(void) {
-	emit_byte(OP_RETURN);
+	emit_bytes(OP_NIL, OP_RETURN);
 
 	Obj_Function * function = current_compiler->function;
 
 #if defined(DEBUG_PRINT_CODE)
 	if (!parser.had_error) {
 		chunk_disassemble(current_chunk(), function->name != NULL ? function->name->chars : "<script>");
+		printf("\n");
 	}
 #endif // DEBUG_PRINT_CODE
 
+	current_compiler = current_compiler->enclosing;
 	return function;
 }
 
@@ -305,6 +314,7 @@ static uint8_t parse_variable(char const * error_message) {
 }
 
 static void mark_initialized(void) {
+	if (current_compiler->scope_depth == 0) { return; }
 	current_compiler->locals[current_compiler->local_count - 1].depth = current_compiler->scope_depth;
 }
 
@@ -314,6 +324,22 @@ static void define_variable(uint8_t global) {
 		return;
 	}
 	emit_bytes(OP_DEFINE_GLOBAL, global);
+}
+
+static void do_expression(void);
+static uint8_t argument_list(void) {
+	uint8_t arg_count = 0;
+	if (parser.current.type != TOKEN_RIGHT_PAREN) {
+		do {
+			if (arg_count == UINT8_MAX) {
+				error("can't have more that 255 arguments");
+			}
+			arg_count++;
+			do_expression();
+		} while (match(TOKEN_COMMA));
+	}
+	consume(TOKEN_RIGHT_PAREN, "expected a ')'");
+	return arg_count;
 }
 
 static void do_expression(void);
@@ -336,6 +362,19 @@ static void named_variable(Token name, bool can_assign) {
 	}
 	else {
 		emit_bytes((uint8_t)get_op, (uint8_t)arg);
+	}
+}
+
+static void begin_scope(void) {
+	current_compiler->scope_depth++;
+}
+
+static void end_scope(void) {
+	current_compiler->scope_depth--;
+
+	while (current_compiler->local_count > 0 && current_compiler->locals[current_compiler->local_count - 1].depth > current_compiler->scope_depth) {
+		emit_byte(OP_POP);
+		current_compiler->local_count--;
 	}
 }
 
@@ -436,6 +475,41 @@ static void do_grouping(bool can_assign) {
 	consume(TOKEN_RIGHT_PAREN, "expected a ')");
 }
 
+static void do_call(bool can_assign) {
+	(void)can_assign;
+	uint8_t arg_count = argument_list();
+	emit_bytes(OP_CALL, arg_count);
+}
+
+static void do_block(void);
+static void do_function(Function_Type type) {
+	Compiler compiler;
+	compiler_init(&compiler, type);
+	begin_scope();
+
+	consume(TOKEN_LEFT_PAREN, "expected a '(");
+	if (parser.current.type != TOKEN_RIGHT_PAREN) {
+		do {
+			if (current_compiler->function->arity == UINT8_MAX) {
+				error_at_current("can't have more that 255 parameters");
+			}
+			current_compiler->function->arity++;
+			uint8_t param_constant = parse_variable("expected a parameter name");
+			define_variable(param_constant);
+		} while (match(TOKEN_COMMA));
+	}
+	consume(TOKEN_RIGHT_PAREN, "expected a ')");
+
+	consume(TOKEN_LEFT_BRACE, "expected a '{");
+	do_block();
+
+	// redundant
+	// end_scope();
+
+	Obj_Function * function = compiler_end();
+	emit_bytes(OP_CONSTANT, make_constant(TO_OBJ(function)));
+}
+
 // statements
 static void do_print_statement(void) {
 	do_expression();
@@ -464,17 +538,11 @@ static void do_var_declaration(void) {
 	define_variable(global);
 }
 
-static void begin_scope(void) {
-	current_compiler->scope_depth++;
-}
-
-static void end_scope(void) {
-	current_compiler->scope_depth--;
-
-	while (current_compiler->local_count > 0 && current_compiler->locals[current_compiler->local_count - 1].depth > current_compiler->scope_depth) {
-		emit_byte(OP_POP);
-		current_compiler->local_count--;
-	}
+static void do_fun_declaration(void) {
+	uint8_t global = parse_variable("expected a function name");
+	mark_initialized();
+	do_function(TYPE_FUNCTION);
+	define_variable(global);
 }
 
 static void do_declaration(void);
@@ -573,6 +641,21 @@ static void do_for_statement(void) {
 	end_scope();
 }
 
+static void do_return_statement(void) {
+	if (current_compiler->type == TYPE_SCRIPT) {
+		error("can't return from top-level code");
+	}
+
+	if (match(TOKEN_SEMICOLON)) {
+		emit_bytes(OP_NIL, OP_RETURN);
+	}
+	else {
+		do_expression();
+		consume(TOKEN_SEMICOLON, "expected a ';'");
+		emit_byte(OP_RETURN);
+	}
+}
+
 static void do_statement(void) {
 	if (match(TOKEN_PRINT)) {
 		do_print_statement();
@@ -585,6 +668,9 @@ static void do_statement(void) {
 	}
 	else if (match(TOKEN_FOR)) {
 		do_for_statement();
+	}
+	else if (match(TOKEN_RETURN)) {
+		do_return_statement();
 	}
 	else if (match(TOKEN_LEFT_BRACE)) {
 		begin_scope();
@@ -599,6 +685,9 @@ static void do_statement(void) {
 static void do_declaration(void) {
 	if (match(TOKEN_VAR)) {
 		do_var_declaration();
+	}
+	else if (match(TOKEN_FUN)) {
+		do_fun_declaration();
 	}
 	else {
 		do_statement();
@@ -627,7 +716,7 @@ Obj_Function * compile(char const * source) {
 
 // data
 static Parse_Rule rules[] = {
-	[TOKEN_LEFT_PAREN]    = {do_grouping, NULL,      PREC_NONE},
+	[TOKEN_LEFT_PAREN]    = {do_grouping, do_call,   PREC_CALL},
 	// [TOKEN_RIGHT_PAREN]   = {NULL,        NULL,      PREC_NONE},
 	// [TOKEN_LEFT_BRACE]    = {NULL,        NULL,      PREC_NONE},
 	// [TOKEN_RIGHT_BRACE]   = {NULL,        NULL,      PREC_NONE},
