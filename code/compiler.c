@@ -140,7 +140,7 @@ static void consume(Token_Type type, char const * message) {
 	error_at_current(message);
 }
 
-static bool match(Token_Type type) {
+static bool compiler_match(Token_Type type) {
 	if (parser.current.type != type) { return false; }
 	compiler_advance();
 	return true;
@@ -255,7 +255,7 @@ static void parse_presedence(Precedence precedence) {
 		infix_rule(can_assign);
 	}
 
-	if (can_assign && match(TOKEN_EQUAL)) {
+	if (can_assign && compiler_match(TOKEN_EQUAL)) {
 		error("invalid assignment target");
 	}
 }
@@ -335,7 +335,7 @@ static uint8_t argument_list(void) {
 			}
 			arg_count++;
 			do_expression();
-		} while (match(TOKEN_COMMA));
+		} while (compiler_match(TOKEN_COMMA));
 	}
 	consume(TOKEN_RIGHT_PAREN, "expected a ')'");
 	return arg_count;
@@ -355,7 +355,7 @@ static void named_variable(Token name, bool can_assign) {
 		set_op = OP_SET_GLOBAL;
 	}
 
-	if (can_assign && match(TOKEN_EQUAL)) {
+	if (can_assign && compiler_match(TOKEN_EQUAL)) {
 		do_expression();
 		emit_bytes((uint8_t)set_op, (uint8_t)arg);
 	}
@@ -495,7 +495,7 @@ static void do_function(Function_Type type) {
 			current_compiler->function->arity++;
 			uint8_t param_constant = parse_variable("expected a parameter name");
 			define_variable(param_constant);
-		} while (match(TOKEN_COMMA));
+		} while (compiler_match(TOKEN_COMMA));
 	}
 	consume(TOKEN_RIGHT_PAREN, "expected a ')");
 
@@ -519,7 +519,7 @@ static void  do_expression_statement(void) {
 static void do_var_declaration(void) {
 	uint8_t global = parse_variable("expected a variable name");
 
-	if (match(TOKEN_EQUAL)) {
+	if (compiler_match(TOKEN_EQUAL)) {
 		do_expression();
 	}
 	else {
@@ -559,7 +559,7 @@ static void do_if_statement(void) {
 
 	uint32_t else_jump = emit_jump(OP_JUMP);
 	emit_byte(OP_POP);
-	if (match(TOKEN_ELSE)) { do_statement(); }
+	if (compiler_match(TOKEN_ELSE)) { do_statement(); }
 	patch_jump(else_jump);
 }
 
@@ -589,10 +589,10 @@ static void do_for_statement(void) {
 
 	consume(TOKEN_LEFT_PAREN, "expected a '('");
 
-	if (match(TOKEN_SEMICOLON)) {
+	if (compiler_match(TOKEN_SEMICOLON)) {
 		// no initializer
 	}
-	else if (match(TOKEN_VAR)) {
+	else if (compiler_match(TOKEN_VAR)) {
 		do_var_declaration();
 	}
 	else {
@@ -602,7 +602,7 @@ static void do_for_statement(void) {
 	uint32_t loop_start = current_chunk()->count;
 
 	uint32_t exit_jump = UINT32_MAX;
-	if (!match(TOKEN_SEMICOLON)) {
+	if (!compiler_match(TOKEN_SEMICOLON)) {
 		do_expression();
 		consume(TOKEN_SEMICOLON, "expected a ';'");
 
@@ -610,7 +610,7 @@ static void do_for_statement(void) {
 		emit_byte(OP_POP);
 	}
 
-	if (!match(TOKEN_RIGHT_PAREN)) {
+	if (!compiler_match(TOKEN_RIGHT_PAREN)) {
 		uint32_t body_jump = emit_jump(OP_JUMP);
 		uint32_t per_loop_start = current_chunk()->count;
 
@@ -639,7 +639,7 @@ static void do_return_statement(void) {
 		error("can't return from top-level code");
 	}
 
-	if (match(TOKEN_SEMICOLON)) {
+	if (compiler_match(TOKEN_SEMICOLON)) {
 		emit_bytes(OP_NIL, OP_RETURN);
 	}
 	else {
@@ -650,19 +650,19 @@ static void do_return_statement(void) {
 }
 
 static void do_statement(void) {
-	if (match(TOKEN_IF)) {
+	if (compiler_match(TOKEN_IF)) {
 		do_if_statement();
 	}
-	else if (match(TOKEN_WHILE)) {
+	else if (compiler_match(TOKEN_WHILE)) {
 		do_while_statement();
 	}
-	else if (match(TOKEN_FOR)) {
+	else if (compiler_match(TOKEN_FOR)) {
 		do_for_statement();
 	}
-	else if (match(TOKEN_RETURN)) {
+	else if (compiler_match(TOKEN_RETURN)) {
 		do_return_statement();
 	}
-	else if (match(TOKEN_LEFT_BRACE)) {
+	else if (compiler_match(TOKEN_LEFT_BRACE)) {
 		begin_scope();
 		do_block();
 		end_scope();
@@ -673,10 +673,10 @@ static void do_statement(void) {
 }
 
 static void do_declaration(void) {
-	if (match(TOKEN_VAR)) {
+	if (compiler_match(TOKEN_VAR)) {
 		do_var_declaration();
 	}
-	else if (match(TOKEN_FUN)) {
+	else if (compiler_match(TOKEN_FUN)) {
 		do_fun_declaration();
 	}
 	else {
@@ -697,7 +697,7 @@ Obj_Function * compile(char const * source) {
 	parser.panic_mode = false;
 
 	compiler_advance();
-	while (!match(TOKEN_EOF)) {
+	while (!compiler_match(TOKEN_EOF)) {
 		do_declaration();
 	}
 	Obj_Function * function = compiler_end();

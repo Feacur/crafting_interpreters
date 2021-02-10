@@ -50,7 +50,6 @@ cd bin
 if not exist temp mkdir temp
 
 if defined unity_build (
-	echo %compiler% %warnings% %linker%
 	clang -std=c99 "../project/unity_build.c" -o"interpreter.exe" %compiler% %warnings% %linker%
 ) else ( rem alternatively, compile a set of translation units
 	if exist "./temp/unity_build*" del ".\temp\unity_build*"

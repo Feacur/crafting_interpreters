@@ -44,7 +44,7 @@ static char scanner_advance(void) {
 	return *(scanner.current++);
 }
 
-static bool match(char expected) {
+static bool scanner_match(char expected) {
 	if (is_at_end()) { return false; }
 	if (*scanner.current != expected) { return false; }
 	scanner.current++;
@@ -193,13 +193,13 @@ Token scan_token(void) {
 		case '*': return make_token(TOKEN_STAR);
 
 		case '!':
-			return make_token(match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
+			return make_token(scanner_match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
 		case '=':
-			return make_token(match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
+			return make_token(scanner_match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
 		case '<':
-			return make_token(match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
+			return make_token(scanner_match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
 		case '>':
-			return make_token(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+			return make_token(scanner_match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
 
 		case '"': return make_string_token();
 	}
