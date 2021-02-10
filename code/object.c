@@ -114,9 +114,10 @@ Obj_Function * new_function(void) {
 	return function;
 }
 
-Obj_Native * new_native(Native_Fn * function) {
+Obj_Native * new_native(Native_Fn * function, uint8_t arity) {
 	Obj_Native * native = ALLOCATE_OBJ(Obj_Native, 0, OBJ_NATIVE);
 	native->function = function;
+	native->arity = arity;
 	return native;
 }
 

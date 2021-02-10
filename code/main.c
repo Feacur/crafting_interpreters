@@ -14,13 +14,9 @@ static Value native_clock(uint8_t arg_count, Value * args) {
 }
 
 static Value native_print(uint8_t arg_count, Value * args) {
-	if (arg_count != 1) {
-		runtime_error("expected %d arguments, but got %d", 1, arg_count);
-	}
-	else {
-		value_print(args[0]);
-		printf("\n");
-	}
+	(void)arg_count;
+	value_print(args[0]);
+	printf("\n");
 	return TO_NIL();
 }
 
@@ -77,8 +73,8 @@ static void repl(void) {
 
 int main (int argc, char * argv[]) {
 	vm_init();
-	vm_define_native("clock", native_clock);
-	vm_define_native("print", native_print);
+	vm_define_native("clock", native_clock, 0);
+	vm_define_native("print", native_print, 1);
 
 	if (argc == 1) {
 		repl();

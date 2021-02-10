@@ -45,6 +45,6 @@ Value vm_stack_peek(uint32_t distance);
 
 struct Obj_Native;
 
-void vm_define_native(char const * name, Native_Fn * function);
+void vm_define_native(char const * name, Native_Fn * function, uint8_t arity);
 
 #endif

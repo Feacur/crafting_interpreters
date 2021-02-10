@@ -90,9 +90,15 @@ static bool call_function(Obj_Function * function, uint8_t arg_count) {
 }
 
 static bool call_native(Obj_Native * native, uint8_t arg_count) {
+	if (arg_count != native->arity) {
+		runtime_error("expected %d arguments, but got %d", native->arity, arg_count);
+		return false;
+	}
+
 	Value result = native->function(arg_count, vm.stack_top - arg_count);
 	vm.stack_top -= arg_count + 1;
 	vm_stack_push(result);
+
 	return !vm.had_error;
 }
 
@@ -314,9 +320,9 @@ Interpret_Result vm_interpret(char const * source) {
 	return run();
 }
 
-void vm_define_native(char const * name, Native_Fn * function) {
+void vm_define_native(char const * name, Native_Fn * function, uint8_t arity) {
 	vm_stack_push(TO_OBJ(copy_string(name, (uint32_t)strlen(name))));
-	vm_stack_push(TO_OBJ(new_native(function)));
+	vm_stack_push(TO_OBJ(new_native(function, arity)));
 	table_set(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
 	vm_stack_pop();
 	vm_stack_pop();

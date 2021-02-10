@@ -31,6 +31,7 @@ struct Obj_Function {
 struct Obj_Native {
 	struct Obj obj;
 	Native_Fn * function;
+	uint8_t arity;
 };
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
@@ -53,7 +54,7 @@ void print_object(Value value);
 struct Obj_String * strings_concatenate(Value a, Value b);
 
 struct Obj_Function * new_function(void);
-struct Obj_Native * new_native(Native_Fn * function);
+struct Obj_Native * new_native(Native_Fn * function, uint8_t arity);
 
 void object_free(struct Obj * object);
 
