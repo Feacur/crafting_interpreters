@@ -21,6 +21,8 @@ typedef struct {
 	} as;
 } Value;
 
+typedef Value Native_Fn(uint8_t arg_count, Value * args);
+
 #define TO_NIL()         ((Value){VAL_NIL,    {.obj     = NULL}})
 #define TO_NUMBER(value) ((Value){VAL_NUMBER, {.number  = value}})
 #define TO_BOOL(value)   ((Value){VAL_BOOL,   {.boolean = value}})

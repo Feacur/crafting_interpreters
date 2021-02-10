@@ -61,12 +61,14 @@ Obj_String * copy_string(char const * chars, uint32_t length) {
 }
 
 typedef struct Obj_Function Obj_Function;
+typedef struct Obj_Native Obj_Native;
 
 void print_object(Value value) {
 	switch (OBJ_TYPE(value)) {
 		case OBJ_STRING:
 			printf("%s", AS_STRING(value)->chars);
 			break;
+
 		case OBJ_FUNCTION: {
 			Obj_Function * function = AS_FUNCTION(value);
 			if (function->name == NULL) {
@@ -75,6 +77,12 @@ void print_object(Value value) {
 			else {
 				printf("<fn %s>", AS_FUNCTION(value)->name->chars);
 			}
+			break;
+		}
+
+		case OBJ_NATIVE: {
+			// Obj_Native * native = AS_NATIVE(value);
+			printf("<native fn>");
 			break;
 		}
 	}
@@ -106,6 +114,12 @@ Obj_Function * new_function(void) {
 	return function;
 }
 
+Obj_Native * new_native(Native_Fn * function) {
+	Obj_Native * native = ALLOCATE_OBJ(Obj_Native, 0, OBJ_NATIVE);
+	native->function = function;
+	return native;
+}
+
 void object_free(struct Obj * object) {
 	switch (object->type) {
 		case OBJ_STRING: {
@@ -113,10 +127,17 @@ void object_free(struct Obj * object) {
 			FREE_OBJ(string, sizeof(char) * string->length);
 			break;
 		}
+
 		case OBJ_FUNCTION: {
 			Obj_Function * function = (Obj_Function *)object;
 			chunk_free(&function->chunk);
 			FREE_OBJ(function, 0);
+			break;
+		}
+
+		case OBJ_NATIVE: {
+			Obj_Native * native = (Obj_Native *)object;
+			FREE_OBJ(native, 0);
 			break;
 		}
 	}

@@ -39,4 +39,8 @@ void vm_stack_push(Value value);
 Value vm_stack_pop(void);
 Value vm_stack_peek(uint32_t distance);
 
+struct Obj_Native;
+
+void vm_define_native(char const * name, Native_Fn * function);
+
 #endif

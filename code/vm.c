@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "object.h"
 #include "compiler.h"
@@ -20,6 +21,7 @@ static void stack_reset(void) {
 }
 
 typedef struct Obj_Function Obj_Function;
+typedef struct Obj_Native Obj_Native;
 
 #if defined(__clang__) // clang: argument 1 of 2 is a printf-like format literal
 __attribute__((format(printf, 1, 2)))
@@ -85,11 +87,20 @@ static bool call_function(Obj_Function * function, uint8_t arg_count) {
 	return true;
 }
 
+static bool call_native(Obj_Native * native, uint8_t arg_count) {
+	Value result = native->function(arg_count, vm.stack_top - arg_count);
+	vm.stack_top -= arg_count + 1;
+	vm_stack_push(result);
+	return true;
+}
+
 static bool call_value(Value callee, uint8_t arg_count) {
 	if (IS_OBJ(callee)) {
 		switch (OBJ_TYPE(callee)) {
 			case OBJ_FUNCTION:
 				return call_function(AS_FUNCTION(callee), arg_count);
+			case OBJ_NATIVE:
+				return call_native(AS_NATIVE(callee), arg_count);
 			default: break;
 		}
 	}
@@ -305,4 +316,12 @@ Interpret_Result vm_interpret(char const * source) {
 	call_function(function, 0);
 
 	return run();
+}
+
+void vm_define_native(char const * name, Native_Fn * function) {
+	vm_stack_push(TO_OBJ(copy_string(name, (uint32_t)strlen(name))));
+	vm_stack_push(TO_OBJ(new_native(function)));
+	table_set(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
+	vm_stack_pop();
+	vm_stack_pop();
 }

@@ -1,11 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "common.h"
 #include "chunk.h"
 #include "debug.h"
 #include "vm.h"
+
+static Value native_clock(uint8_t arg_count, Value * args) {
+	(void)arg_count; (void)args;
+	return TO_NUMBER((double)(clock()) / CLOCKS_PER_SEC);
+}
 
 static char * read_file(char const * path) {
 	FILE * file = fopen(path, "rb");
@@ -60,6 +66,7 @@ static void repl(void) {
 
 int main (int argc, char * argv[]) {
 	vm_init();
+	vm_define_native("clock", native_clock);
 
 	if (argc == 1) {
 		repl();
