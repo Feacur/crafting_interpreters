@@ -1,6 +1,24 @@
-fun fib(n) {
+fun fib_insane(n) {
 	if (n < 2) return n;
-	return fib(n - 2) + fib(n - 1);
+	return fib_insane(n - 2) + fib_insane(n - 1);
+}
+
+print "> fib insane";
+var start = clock();
+print fib_insane(35);
+print clock() - start;
+
+fun fib(n) {
+	var accumulator;
+	var a = 1;
+	var b = 1;
+	n = n - 2;
+	for (var i = 0; i < n; i = i + 1) {
+		accumulator = a + b;
+		a = b;
+		b = accumulator;
+	}
+	return accumulator;
 }
 
 print "> fib";
