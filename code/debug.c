@@ -89,8 +89,6 @@ uint32_t chunk_disassemble_instruction(Chunk * chunk, uint32_t offset) {
 			return simple_instruction("OP_NOT", offset);
 		case OP_NEGATE:
 			return simple_instruction("OP_NEGATE", offset);
-		case OP_PRINT:
-			return simple_instruction("OP_PRINT", offset);
 		case OP_LOOP:
 			return jump_instruction("OP_LOOP", -1, chunk, offset);
 		case OP_JUMP:

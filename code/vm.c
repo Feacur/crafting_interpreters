@@ -26,7 +26,7 @@ typedef struct Obj_Native Obj_Native;
 #if defined(__clang__) // clang: argument 1 of 2 is a printf-like format literal
 __attribute__((format(printf, 1, 2)))
 #endif // __clang__
-static void runtime_error(char const * format, ...) {
+void runtime_error(char const * format, ...) {
 	va_list args;
 	va_start(args, format);
 	vfprintf(stderr, format, args);
@@ -48,11 +48,13 @@ static void runtime_error(char const * format, ...) {
 	}
 
 	stack_reset();
+	vm.had_error = true;
 }
 
 void vm_init(void) {
 	stack_reset();
 	vm.objects = NULL;
+	vm.had_error = false;
 	table_init(&vm.globals);
 	table_init(&vm.strings);
 }
@@ -91,7 +93,7 @@ static bool call_native(Obj_Native * native, uint8_t arg_count) {
 	Value result = native->function(arg_count, vm.stack_top - arg_count);
 	vm.stack_top -= arg_count + 1;
 	vm_stack_push(result);
-	return true;
+	return !vm.had_error;
 }
 
 static bool call_value(Value callee, uint8_t arg_count) {
@@ -229,12 +231,6 @@ static Interpret_Result run(void) {
 					return INTERPRET_RUNTIME_ERROR;
 				}
 				vm_stack_push(TO_NUMBER(-AS_NUMBER(vm_stack_pop())));
-				break;
-			}
-
-			case OP_PRINT: {
-				value_print(vm_stack_pop());
-				printf("\n");
 				break;
 			}
 

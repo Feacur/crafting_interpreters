@@ -1,18 +1,18 @@
-print "> nest";
+print("> nest");
 fun first() {
-	print "first";
+	print("first");
 	second();
 }
 
 fun second() {
-	print "second";
+	print("second");
 }
 
 first();
 
-print "> sum";
+print("> sum");
 fun sum(a, b, c) {
   return a + b + c;
 }
 
-print 4 + sum(5, 6, 7);
+print(4 + sum(5, 6, 7));

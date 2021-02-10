@@ -3,10 +3,10 @@ fun fib_insane(n) {
 	return fib_insane(n - 2) + fib_insane(n - 1);
 }
 
-print "> fib insane";
+print("> fib insane");
 var start = clock();
-print fib_insane(35);
-print clock() - start;
+print(fib_insane(35));
+print(clock() - start);
 
 fun fib(n) {
 	var accumulator;
@@ -21,7 +21,7 @@ fun fib(n) {
 	return accumulator;
 }
 
-print "> fib";
+print("> fib");
 var start = clock();
-print fib(35);
-print clock() - start;
+print(fib(35));
+print(clock() - start);

@@ -22,6 +22,8 @@ struct VM {
 	Table globals;
 	Table strings;
 	struct Obj * objects;
+
+	bool had_error;
 };
 
 extern struct VM vm;
@@ -31,6 +33,8 @@ typedef enum {
 	INTERPRET_COMPILE_ERROR,
 	INTERPRET_RUNTIME_ERROR,
 } Interpret_Result;
+
+void runtime_error(char const * format, ...);
 
 void vm_init(void);
 void vm_free(void);

@@ -13,6 +13,17 @@ static Value native_clock(uint8_t arg_count, Value * args) {
 	return TO_NUMBER((double)(clock()) / CLOCKS_PER_SEC);
 }
 
+static Value native_print(uint8_t arg_count, Value * args) {
+	if (arg_count != 1) {
+		runtime_error("expected %d arguments, but got %d", 1, arg_count);
+	}
+	else {
+		value_print(args[0]);
+		printf("\n");
+	}
+	return TO_NIL();
+}
+
 static char * read_file(char const * path) {
 	FILE * file = fopen(path, "rb");
 	if (file == NULL) {
@@ -67,6 +78,7 @@ static void repl(void) {
 int main (int argc, char * argv[]) {
 	vm_init();
 	vm_define_native("clock", native_clock);
+	vm_define_native("print", native_print);
 
 	if (argc == 1) {
 		repl();

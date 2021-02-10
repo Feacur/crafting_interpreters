@@ -122,7 +122,6 @@ static void syncronize(void) {
 			case TOKEN_FOR:
 			case TOKEN_IF:
 			case TOKEN_WHILE:
-			case TOKEN_PRINT:
 			case TOKEN_RETURN:
 				return;
 			default: break;
@@ -511,12 +510,6 @@ static void do_function(Function_Type type) {
 }
 
 // statements
-static void do_print_statement(void) {
-	do_expression();
-	consume(TOKEN_SEMICOLON, "expected a ';'");
-	emit_byte(OP_PRINT);
-}
-
 static void  do_expression_statement(void) {
 	do_expression();
 	consume(TOKEN_SEMICOLON, "expected a ';'");
@@ -657,10 +650,7 @@ static void do_return_statement(void) {
 }
 
 static void do_statement(void) {
-	if (match(TOKEN_PRINT)) {
-		do_print_statement();
-	}
-	else if (match(TOKEN_IF)) {
+	if (match(TOKEN_IF)) {
 		do_if_statement();
 	}
 	else if (match(TOKEN_WHILE)) {
