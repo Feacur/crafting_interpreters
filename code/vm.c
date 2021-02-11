@@ -144,6 +144,13 @@ static bool call_value(Value callee, uint8_t arg_count) {
 	return false;
 }
 
+typedef struct Obj_Upvalue Obj_Upvalue;
+
+static Obj_Upvalue * capture_upvalue(Value * local) {
+	Obj_Upvalue * upvalue = new_upvalue(local);
+	return upvalue;
+}
+
 typedef struct Obj_String Obj_String;
 
 static Interpret_Result run(void) {
@@ -201,6 +208,18 @@ static Interpret_Result run(void) {
 			case OP_GET_LOCAL: {
 				uint8_t slot = READ_BYTE();
 				vm_stack_push(frame->slots[slot]);
+				break;
+			}
+
+			case OP_SET_UPVALUE: {
+				uint8_t slot = READ_BYTE();
+				*frame->closure->upvalues[slot]->location = vm_stack_peek(0);
+				break;
+			}
+
+			case OP_GET_UPVALUE: {
+				uint8_t slot = READ_BYTE();
+				vm_stack_push(*frame->closure->upvalues[slot]->location);
 				break;
 			}
 
@@ -299,6 +318,18 @@ static Interpret_Result run(void) {
 				Obj_Function * function = AS_FUNCTION(READ_CONSTANT());
 				Obj_Closure * closure = new_closure(function);
 				vm_stack_push(TO_OBJ(closure));
+
+				for (uint32_t i = 0; i < closure->upvalue_count; i++) {
+					uint8_t index = READ_BYTE();
+					uint8_t is_local = READ_BYTE();
+					if (is_local) {
+						closure->upvalues[i] = capture_upvalue(&frame->slots[index]);
+					}
+					else {
+						closure->upvalues[i] = frame->closure->upvalues[index];
+					}
+				}
+
 				break;
 			}
 

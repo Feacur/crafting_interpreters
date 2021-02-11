@@ -49,6 +49,11 @@ typedef enum {
 	TYPE_SCRIPT,
 } Function_Type;
 
+typedef struct {
+	uint8_t index;
+	bool is_local;
+} Upvalue;
+
 typedef struct Obj_Function Obj_Function;
 
 typedef struct Compiler {
@@ -56,6 +61,7 @@ typedef struct Compiler {
 	Obj_Function * function;
 	Function_Type type;
 	Local locals[LOCALS_MAX];
+	Upvalue upvalues[LOCALS_MAX];
 	uint32_t local_count;
 	uint32_t scope_depth;
 } Compiler;
@@ -277,6 +283,39 @@ static uint32_t resolve_local(Compiler * compiler, Token * name) {
 	return UINT32_MAX;
 }
 
+static uint32_t add_upvalue(Compiler * compiler, uint8_t index, bool is_local) {
+	uint32_t upvalue_count = compiler->function->upvalue_count;
+	for (uint32_t i = 0; i < upvalue_count; i++) {
+		Upvalue * upvalue = &compiler->upvalues[i];
+		if (upvalue->index == index && upvalue->is_local == is_local) {
+			return i;
+		}
+	}
+	if (upvalue_count == LOCALS_MAX) {
+		error("too many closure variables");
+		return 0;
+	}
+	compiler->upvalues[upvalue_count].index = index;
+	compiler->upvalues[upvalue_count].is_local = is_local;
+	return compiler->function->upvalue_count++;
+}
+
+static uint32_t resolve_upvalue(Compiler * compiler, Token * name) {
+	if (compiler->enclosing == NULL) { return UINT32_MAX; }
+
+	uint32_t local = resolve_local(compiler->enclosing, name);
+	if (local != UINT32_MAX) {
+		return add_upvalue(compiler, (uint8_t)local, true);
+	}
+
+	uint32_t upvalue = resolve_upvalue(compiler->enclosing, name);
+	if (upvalue != UINT32_MAX) {
+		return add_upvalue(compiler, (uint8_t)upvalue, false);
+	}
+
+	return UINT32_MAX;
+}
+
 static void add_local(Token name) {
 	if (current_compiler->local_count == LOCALS_MAX) {
 		error("too many local variables");
@@ -344,10 +383,14 @@ static uint8_t argument_list(void) {
 static void do_expression(void);
 static void named_variable(Token name, bool can_assign) {
 	Op_Code get_op, set_op;
-	uint32_t arg = resolve_local(current_compiler, &name);
-	if (arg != UINT32_MAX) {
+	uint32_t arg;
+	if ((arg = resolve_local(current_compiler, &name)) != UINT32_MAX) {
 		get_op = OP_GET_LOCAL;
 		set_op = OP_SET_LOCAL;
+	}
+	else if ((arg = resolve_upvalue(current_compiler, &name)) != UINT32_MAX) {
+		get_op = OP_GET_UPVALUE;
+		set_op = OP_SET_UPVALUE;
 	}
 	else {
 		arg = identifier_constant(&name);
@@ -507,7 +550,15 @@ static void do_function(Function_Type type) {
 
 	Obj_Function * function = compiler_end();
 	// emit_bytes(OP_CONSTANT, make_constant(TO_OBJ(function)));
+
 	emit_bytes(OP_CLOSURE, make_constant(TO_OBJ(function)));
+
+	for (uint32_t i = 0; i < function->upvalue_count; i++) {
+		emit_bytes(
+			compiler.upvalues[i].index,
+			compiler.upvalues[i].is_local ? 1 : 0
+		);
+	}
 }
 
 // statements

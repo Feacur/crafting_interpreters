@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "chunk.h"
+#include "object.h"
 #include "debug.h"
 
 typedef struct Chunk Chunk;
@@ -38,6 +38,8 @@ static uint32_t simple_instruction(char const * name, uint32_t offset) {
 	return offset + 1;
 }
 
+typedef struct Obj_Function Obj_Function;
+
 uint32_t chunk_disassemble_instruction(Chunk * chunk, uint32_t offset) {
 	printf("%04d ", offset);
 	if (offset > 0 && chunk->lines[offset] == chunk->lines[offset - 1]) {
@@ -55,6 +57,10 @@ uint32_t chunk_disassemble_instruction(Chunk * chunk, uint32_t offset) {
 			return byte_instruction("OP_SET_LOCAL", chunk, offset);
 		case OP_GET_LOCAL:
 			return byte_instruction("OP_GET_LOCAL", chunk, offset);
+		case OP_SET_UPVALUE:
+			return byte_instruction("OP_SET_UPVALUE", chunk, offset);
+		case OP_GET_UPVALUE:
+			return byte_instruction("OP_GET_UPVALUE", chunk, offset);
 		case OP_CALL:
 			return byte_instruction("OP_CALL", chunk, offset);
 		case OP_SET_GLOBAL:
@@ -100,7 +106,18 @@ uint32_t chunk_disassemble_instruction(Chunk * chunk, uint32_t offset) {
 			printf("%-16s %4d '", "OP_CLOSURE", constant);
 			value_print(chunk->constants.values[constant]);
 			printf("'\n");
-			return offset + 2;
+
+			Obj_Function * function = AS_FUNCTION(chunk->constants.values[constant]);
+			for (uint32_t i = 0; i < function->upvalue_count; i++) {
+				uint8_t index = chunk->code[offset + 2 + i * 2];
+				uint8_t is_local = chunk->code[offset + 3 + i * 2];
+				printf(
+					"%04d      |                     %s %d\n",
+					offset + i * 2, is_local ? "local" : "upvalue", index
+				);
+			}
+
+			return offset + 2 + function->upvalue_count * 2;
 		}
 		case OP_RETURN:
 			return simple_instruction("OP_RETURN", offset);

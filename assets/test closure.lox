@@ -1,4 +1,4 @@
-print("> global or local");
+print("> global or outer");
 var x = "global";
 fun outer() {
 	var x = "outer";
@@ -9,15 +9,15 @@ fun outer() {
 }
 outer();
 
-print("> closure ");
-fun makeClosure(value) {
-	fun closure() {
-		print(value);
-	}
-	return closure;
+print("> complex");
+fun outer2() {
+  var x = "outside";
+  fun inner2() {
+    print(x);
+  }
+
+  return inner2;
 }
 
-var doughnut = makeClosure("doughnut");
-var bagel = makeClosure("bagel");
-doughnut();
-bagel();
+var closure = outer2();
+closure();

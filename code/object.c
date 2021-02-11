@@ -63,6 +63,7 @@ Obj_String * copy_string(char const * chars, uint32_t length) {
 typedef struct Obj_Function Obj_Function;
 typedef struct Obj_Native Obj_Native;
 typedef struct Obj_Closure Obj_Closure;
+typedef struct Obj_Upvalue Obj_Upvalue;
 
 void print_object(Obj * object) {
 	switch (object->type) {
@@ -92,6 +93,13 @@ void print_object(Obj * object) {
 			print_object((Obj *)closure->function);
 			break;
 		}
+
+		case OBJ_UPVALUE: {
+			// Obj_Upvalue * upvalue = ((Obj_Upvalue *)object);
+			// value_print(*upvalue->location);
+			printf("upvalue");
+			break;
+		}
 	}
 }
 
@@ -116,6 +124,7 @@ Obj_String * strings_concatenate(Value value_a, Value value_b) {
 Obj_Function * new_function(void) {
 	Obj_Function * function = ALLOCATE_OBJ(Obj_Function, 0, OBJ_FUNCTION);
 	function->arity = 0;
+	function->upvalue_count = 0;
 	function->name = NULL;
 	chunk_init(&function->chunk);
 	return function;
@@ -131,7 +140,20 @@ Obj_Native * new_native(Native_Fn * function, uint8_t arity) {
 Obj_Closure * new_closure(Obj_Function * function) {
 	Obj_Closure * closure = ALLOCATE_OBJ(Obj_Closure, 0, OBJ_CLOSURE);
 	closure->function = function;
+
+	closure->upvalue_count = function->upvalue_count;
+	closure->upvalues = reallocate(NULL, 0, sizeof(Obj_Upvalue *) * function->upvalue_count);
+	for (uint32_t i = 0; i < function->upvalue_count; i++) {
+		closure->upvalues[i] = NULL;
+	}
+
 	return closure;
+}
+
+Obj_Upvalue * new_upvalue(Value * slot) {
+	Obj_Upvalue * upvalue = ALLOCATE_OBJ(Obj_Upvalue, 0, OBJ_UPVALUE);
+	upvalue->location = slot;
+	return upvalue;
 }
 
 void object_free(struct Obj * object) {
@@ -157,7 +179,14 @@ void object_free(struct Obj * object) {
 
 		case OBJ_CLOSURE: {
 			Obj_Closure * closure = (Obj_Closure *)object;
+			reallocate(closure->upvalues, sizeof(Obj_Upvalue *) * closure->upvalue_count, 0);
 			FREE_OBJ(closure, 0);
+			break;
+		}
+
+		case OBJ_UPVALUE: {
+			Obj_Upvalue * upvalue = ((Obj_Upvalue *)object);
+			FREE_OBJ(upvalue, 0);
 			break;
 		}
 	}
