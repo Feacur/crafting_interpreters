@@ -506,7 +506,8 @@ static void do_function(Function_Type type) {
 	// end_scope();
 
 	Obj_Function * function = compiler_end();
-	emit_bytes(OP_CONSTANT, make_constant(TO_OBJ(function)));
+	// emit_bytes(OP_CONSTANT, make_constant(TO_OBJ(function)));
+	emit_bytes(OP_CLOSURE, make_constant(TO_OBJ(function)));
 }
 
 // statements

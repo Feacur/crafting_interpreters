@@ -22,6 +22,7 @@ static void stack_reset(void) {
 
 typedef struct Obj_Function Obj_Function;
 typedef struct Obj_Native Obj_Native;
+typedef struct Obj_Closure Obj_Closure;
 
 #if defined(__clang__) // clang: argument 1 of 2 is a printf-like format literal
 __attribute__((format(printf, 1, 2)))
@@ -36,7 +37,9 @@ void runtime_error(char const * format, ...) {
 
 	for (uint32_t i = vm.frame_count; i-- > 0;) {
 		Call_Frame * frame = &vm.frames[i];
-		Obj_Function * function = frame->function;
+		// Obj_Function * function = frame->function;
+		Obj_Closure * closure = frame->closure;
+		Obj_Function * function = closure->function;
 		size_t instruction = (size_t)(frame->ip - function->chunk.code - 1);
 		fprintf(stderr, "[line %d] in ", function->chunk.lines[instruction]);
 		if (function->name == NULL) {
@@ -69,25 +72,25 @@ static bool is_falsey(Value value) {
 	return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
 }
 
-static bool call_function(Obj_Function * function, uint8_t arg_count) {
-	if (arg_count != function->arity) {
-		runtime_error("expected %d arguments, but got %d", function->arity, arg_count);
-		return false;
-	}
-
-	if (vm.frame_count == FRAMES_MAX) {
-		runtime_error("stack overflow");
-		return false;
-	}
-
-	Call_Frame * frame = &vm.frames[vm.frame_count++];
-	frame->function = function;
-	frame->ip = function->chunk.code;
-
-	frame->slots = vm.stack_top - arg_count - 1;
-
-	return true;
-}
+// static bool call_function(Obj_Function * function, uint8_t arg_count) {
+// 	if (arg_count != function->arity) {
+// 		runtime_error("expected %d arguments, but got %d", function->arity, arg_count);
+// 		return false;
+// 	}
+// 
+// 	if (vm.frame_count == FRAMES_MAX) {
+// 		runtime_error("stack overflow");
+// 		return false;
+// 	}
+// 
+// 	Call_Frame * frame = &vm.frames[vm.frame_count++];
+// 	frame->function = function;
+// 	frame->ip = function->chunk.code;
+// 
+// 	frame->slots = vm.stack_top - arg_count - 1;
+// 
+// 	return true;
+// }
 
 static bool call_native(Obj_Native * native, uint8_t arg_count) {
 	if (arg_count != native->arity) {
@@ -102,13 +105,37 @@ static bool call_native(Obj_Native * native, uint8_t arg_count) {
 	return !vm.had_error;
 }
 
+static bool call_closure(Obj_Closure * closure, uint8_t arg_count) {
+	// return call_function(closure->function, arg_count);
+	Obj_Function * function = closure->function;
+	if (arg_count != function->arity) {
+		runtime_error("expected %d arguments, but got %d", function->arity, arg_count);
+		return false;
+	}
+
+	if (vm.frame_count == FRAMES_MAX) {
+		runtime_error("stack overflow");
+		return false;
+	}
+
+	Call_Frame * frame = &vm.frames[vm.frame_count++];
+	frame->closure = closure;
+	frame->ip = function->chunk.code;
+
+	frame->slots = vm.stack_top - arg_count - 1;
+
+	return true;
+}
+
 static bool call_value(Value callee, uint8_t arg_count) {
 	if (IS_OBJ(callee)) {
 		switch (OBJ_TYPE(callee)) {
-			case OBJ_FUNCTION:
-				return call_function(AS_FUNCTION(callee), arg_count);
+			// case OBJ_FUNCTION:
+			// 	return call_function(AS_FUNCTION(callee), arg_count);
 			case OBJ_NATIVE:
 				return call_native(AS_NATIVE(callee), arg_count);
+			case OBJ_CLOSURE:
+				return call_closure(AS_CLOSURE(callee), arg_count);
 			default: break;
 		}
 	}
@@ -124,7 +151,8 @@ static Interpret_Result run(void) {
 
 #define READ_BYTE() (*(frame->ip++))
 #define READ_SHORT() (frame->ip += 2, (uint16_t)(frame->ip[-2] << 8) | (uint16_t)frame->ip[-1])
-#define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
+// #define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
+#define READ_CONSTANT() (frame->closure->function->chunk.constants.values[READ_BYTE()])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 
 #define OP_BINARY(to_value, op) \
@@ -267,6 +295,13 @@ static Interpret_Result run(void) {
 				break;
 			}
 
+			case OP_CLOSURE: {
+				Obj_Function * function = AS_FUNCTION(READ_CONSTANT());
+				Obj_Closure * closure = new_closure(function);
+				vm_stack_push(TO_OBJ(closure));
+				break;
+			}
+
 			case OP_RETURN: {
 				Value result = vm_stack_pop();
 
@@ -315,7 +350,11 @@ Interpret_Result vm_interpret(char const * source) {
 	if (function == NULL) { return INTERPRET_COMPILE_ERROR; }
 
 	vm_stack_push(TO_OBJ(function));
-	call_function(function, 0);
+	Obj_Closure * closure = new_closure(function);
+	vm_stack_pop();
+	vm_stack_push(TO_OBJ(closure));
+	// call_function(function, 0);
+	call_value(vm.stack_top[-1], 0);
 
 	return run();
 }
@@ -323,7 +362,7 @@ Interpret_Result vm_interpret(char const * source) {
 void vm_define_native(char const * name, Native_Fn * function, uint8_t arity) {
 	vm_stack_push(TO_OBJ(copy_string(name, (uint32_t)strlen(name))));
 	vm_stack_push(TO_OBJ(new_native(function, arity)));
-	table_set(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
+	table_set(&vm.globals, AS_STRING(vm.stack_top[-2]), vm.stack_top[-1]);
 	vm_stack_pop();
 	vm_stack_pop();
 }

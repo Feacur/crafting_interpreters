@@ -8,7 +8,7 @@ void value_print(Value value) {
 		case VAL_NIL:    printf("nil"); break;
 		case VAL_NUMBER: printf("%g", AS_NUMBER(value)); break;
 		case VAL_BOOL:   printf(AS_BOOL(value) ? "true" : "false"); break;
-		case VAL_OBJ:    print_object(value); break;
+		case VAL_OBJ:    print_object(AS_OBJ(value)); break;
 	}
 }
 

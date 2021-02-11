@@ -3,10 +3,12 @@
 
 #include "table.h"
 
-struct Obj_Function;
+// struct Obj_Function;
+struct Obj_Closure;
 
 typedef struct {
-	struct Obj_Function * function;
+	// struct Obj_Function * function;
+	struct Obj_Closure * closure;
 	uint8_t * ip;
 	Value * slots;
 } Call_Frame;

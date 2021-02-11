@@ -95,6 +95,13 @@ uint32_t chunk_disassemble_instruction(Chunk * chunk, uint32_t offset) {
 			return jump_instruction("OP_JUMP", 1, chunk, offset);
 		case OP_JUMP_IF_FALSE:
 			return jump_instruction("OP_JUMP_IF_FALSE", 1, chunk, offset);
+		case OP_CLOSURE: {
+			uint8_t constant = chunk->code[offset + 1];
+			printf("%-16s %4d '", "OP_CLOSURE", constant);
+			value_print(chunk->constants.values[constant]);
+			printf("'\n");
+			return offset + 2;
+		}
 		case OP_RETURN:
 			return simple_instruction("OP_RETURN", offset);
 	}

@@ -62,27 +62,34 @@ Obj_String * copy_string(char const * chars, uint32_t length) {
 
 typedef struct Obj_Function Obj_Function;
 typedef struct Obj_Native Obj_Native;
+typedef struct Obj_Closure Obj_Closure;
 
-void print_object(Value value) {
-	switch (OBJ_TYPE(value)) {
+void print_object(Obj * object) {
+	switch (object->type) {
 		case OBJ_STRING:
-			printf("%s", AS_STRING(value)->chars);
+			printf("%s", ((Obj_String *)object)->chars);
 			break;
 
 		case OBJ_FUNCTION: {
-			Obj_Function * function = AS_FUNCTION(value);
+			Obj_Function * function = ((Obj_Function *)object);
 			if (function->name == NULL) {
 				printf("<script>");
 			}
 			else {
-				printf("<fn %s>", AS_FUNCTION(value)->name->chars);
+				printf("<fn %s>", function->name->chars);
 			}
 			break;
 		}
 
 		case OBJ_NATIVE: {
-			// Obj_Native * native = AS_NATIVE(value);
+			// Obj_Native * native = ((Obj_Native *)object);
 			printf("<native fn>");
+			break;
+		}
+
+		case OBJ_CLOSURE: {
+			Obj_Closure * closure = ((Obj_Closure *)object);
+			print_object((Obj *)closure->function);
 			break;
 		}
 	}
@@ -121,6 +128,12 @@ Obj_Native * new_native(Native_Fn * function, uint8_t arity) {
 	return native;
 }
 
+Obj_Closure * new_closure(Obj_Function * function) {
+	Obj_Closure * closure = ALLOCATE_OBJ(Obj_Closure, 0, OBJ_CLOSURE);
+	closure->function = function;
+	return closure;
+}
+
 void object_free(struct Obj * object) {
 	switch (object->type) {
 		case OBJ_STRING: {
@@ -139,6 +152,12 @@ void object_free(struct Obj * object) {
 		case OBJ_NATIVE: {
 			Obj_Native * native = (Obj_Native *)object;
 			FREE_OBJ(native, 0);
+			break;
+		}
+
+		case OBJ_CLOSURE: {
+			Obj_Closure * closure = (Obj_Closure *)object;
+			FREE_OBJ(closure, 0);
 			break;
 		}
 	}

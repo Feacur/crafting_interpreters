@@ -5,8 +5,9 @@
 
 typedef enum {
 	OBJ_STRING,
-	OBJ_FUNCTION,
 	OBJ_NATIVE,
+	OBJ_FUNCTION,
+	OBJ_CLOSURE,
 } Obj_Type;
 
 struct Obj {
@@ -34,15 +35,22 @@ struct Obj_Native {
 	uint8_t arity;
 };
 
+struct Obj_Closure {
+	struct Obj obj;
+	struct Obj_Function * function;
+};
+
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
 #define IS_STRING(value) is_obj_type(value, OBJ_STRING)
 #define IS_FUNCTION(value) is_obj_type(value, OBJ_FUNCTION)
 #define IS_NATIVE(value) is_obj_type(value, OBJ_NATIVE)
+#define IS_CLOSURE(value) is_obj_type(value, OBJ_CLOSURE)
 
 #define AS_STRING(value) ((struct Obj_String *)(void *)AS_OBJ(value))
 #define AS_FUNCTION(value) ((struct Obj_Function *)(void *)AS_OBJ(value))
 #define AS_NATIVE(value) ((struct Obj_Native *)(void *)AS_OBJ(value))
+#define AS_CLOSURE(value) ((struct Obj_Closure *)(void *)AS_OBJ(value))
 
 struct Obj_String * copy_string(char const * chars, uint32_t length);
 
@@ -50,11 +58,12 @@ inline static bool is_obj_type(Value value, Obj_Type type) {
 	return IS_OBJ(value) && OBJ_TYPE(value) == type;
 }
 
-void print_object(Value value);
+void print_object(struct Obj * object);
 struct Obj_String * strings_concatenate(Value a, Value b);
 
 struct Obj_Function * new_function(void);
 struct Obj_Native * new_native(Native_Fn * function, uint8_t arity);
+struct Obj_Closure * new_closure(struct Obj_Function * function);
 
 void object_free(struct Obj * object);
 
