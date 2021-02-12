@@ -39,7 +39,9 @@ struct Obj_Native {
 
 struct Obj_Upvalue {
 	struct Obj obj;
+	Value closed;
 	Value * location;
+	struct Obj_Upvalue * next;
 };
 
 struct Obj_Closure {

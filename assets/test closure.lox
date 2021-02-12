@@ -21,3 +21,22 @@ fun outer2() {
 
 var closure = outer2();
 closure();
+
+var globalSet;
+var globalGet;
+
+print("> get and set");
+fun main() {
+	var a = "initial";
+
+	fun set() { a = "updated"; }
+	fun get() { print(a); }
+
+	globalSet = set;
+	globalGet = get;
+}
+
+main();
+globalGet();
+globalSet();
+globalGet();

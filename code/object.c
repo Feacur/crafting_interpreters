@@ -152,7 +152,9 @@ Obj_Closure * new_closure(Obj_Function * function) {
 
 Obj_Upvalue * new_upvalue(Value * slot) {
 	Obj_Upvalue * upvalue = ALLOCATE_OBJ(Obj_Upvalue, 0, OBJ_UPVALUE);
+	upvalue->closed = TO_NIL();
 	upvalue->location = slot;
+	upvalue->next = NULL;
 	return upvalue;
 }
 

@@ -18,6 +18,7 @@ VM vm;
 static void stack_reset(void) {
 	vm.stack_top = vm.stack;
 	vm.frame_count = 0;
+	vm.open_upvalues = NULL;
 }
 
 typedef struct Obj_Function Obj_Function;
@@ -147,8 +148,38 @@ static bool call_value(Value callee, uint8_t arg_count) {
 typedef struct Obj_Upvalue Obj_Upvalue;
 
 static Obj_Upvalue * capture_upvalue(Value * local) {
-	Obj_Upvalue * upvalue = new_upvalue(local);
-	return upvalue;
+	Obj_Upvalue * prev_upvalue = NULL;
+	Obj_Upvalue * upvalue = vm.open_upvalues;
+
+	while (upvalue != NULL && upvalue->location > local) {
+		prev_upvalue = upvalue;
+		upvalue = upvalue->next;
+	}
+
+	if (upvalue != NULL && upvalue->location == local) {
+		return upvalue;
+	}
+
+	Obj_Upvalue * created_upvalue = new_upvalue(local);
+	created_upvalue->next = upvalue;
+
+	if (prev_upvalue == NULL) {
+		vm.open_upvalues = created_upvalue;
+	}
+	else {
+		prev_upvalue->next = created_upvalue;
+	}
+
+	return created_upvalue;
+}
+
+static void close_upvalues(Value * last) {
+	while (vm.open_upvalues != NULL && vm.open_upvalues->location >= last) {
+		Obj_Upvalue * upvalue = vm.open_upvalues;
+		upvalue->closed = *upvalue->location;
+		upvalue->location = &upvalue->closed;
+		vm.open_upvalues = upvalue->next;
+	}
 }
 
 typedef struct Obj_String Obj_String;
@@ -333,8 +364,16 @@ static Interpret_Result run(void) {
 				break;
 			}
 
+			case OP_CLOSE_UPVALUE: {
+				close_upvalues(vm.stack_top - 1);
+				vm_stack_pop();
+				break;
+			}
+
 			case OP_RETURN: {
 				Value result = vm_stack_pop();
+
+				close_upvalues(frame->slots);
 
 				vm.frame_count--;
 				if (vm.frame_count == 0) {

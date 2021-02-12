@@ -42,6 +42,7 @@ typedef struct {
 typedef struct {
 	Token name;
 	uint32_t depth;
+	bool is_captured;
 } Local;
 
 typedef enum {
@@ -219,6 +220,7 @@ static void compiler_init(Compiler * compiler, Function_Type type) {
 
 	Local * local = &compiler->locals[compiler->local_count++];
 	local->depth = 0;
+	local->is_captured = false;
 	local->name.start = "";
 	local->name.length = 0;
 
@@ -305,6 +307,7 @@ static uint32_t resolve_upvalue(Compiler * compiler, Token * name) {
 
 	uint32_t local = resolve_local(compiler->enclosing, name);
 	if (local != UINT32_MAX) {
+		compiler->enclosing->locals[local].is_captured = true;
 		return add_upvalue(compiler, (uint8_t)local, true);
 	}
 
@@ -324,6 +327,7 @@ static void add_local(Token name) {
 	Local * local = &current_compiler->locals[current_compiler->local_count++];
 	local->name = name;
 	local->depth = UINT32_MAX;
+	local->is_captured = false;
 }
 
 static void declare_variable(void) {
@@ -415,7 +419,12 @@ static void end_scope(void) {
 	current_compiler->scope_depth--;
 
 	while (current_compiler->local_count > 0 && current_compiler->locals[current_compiler->local_count - 1].depth > current_compiler->scope_depth) {
-		emit_byte(OP_POP);
+		if (current_compiler->locals[current_compiler->local_count - 1].is_captured) {
+			emit_byte(OP_CLOSE_UPVALUE);
+		}
+		else {
+			emit_byte(OP_POP);
+		}
 		current_compiler->local_count--;
 	}
 }

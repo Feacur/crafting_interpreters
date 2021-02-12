@@ -23,6 +23,7 @@ struct VM {
 	Value * stack_top;
 	Table globals;
 	Table strings;
+	struct Obj_Upvalue * open_upvalues;
 	struct Obj * objects;
 
 	bool had_error;
