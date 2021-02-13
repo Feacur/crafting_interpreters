@@ -1,0 +1,23 @@
+var globalOne;
+var globalTwo;
+
+fun main() {
+	for (var a = 0; a < 2; a = a + 1) {
+		var closure_a = a;
+		fun closure() {
+			print("closure_a, a:");
+			print(closure_a);
+			print(a);
+		}
+
+		if (globalOne == nil) {
+			globalOne = closure;
+		} else {
+			globalTwo = closure;
+		}
+	}
+}
+
+main();
+globalOne();
+globalTwo();
