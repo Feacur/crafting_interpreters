@@ -620,9 +620,10 @@ static void do_if_statement(void) {
 	uint32_t then_jump = emit_jump(OP_JUMP_IF_FALSE);
 	emit_byte(OP_POP);
 	do_statement();
-	patch_jump(then_jump);
 
 	uint32_t else_jump = emit_jump(OP_JUMP);
+	patch_jump(then_jump);
+
 	emit_byte(OP_POP);
 	if (compiler_match(TOKEN_ELSE)) { do_statement(); }
 	patch_jump(else_jump);
