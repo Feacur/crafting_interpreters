@@ -1,31 +1,40 @@
-print("> global or outer");
-var x = "global";
-fun outer() {
-	var x = "outer";
-	fun inner() {
+print("> closure");
+fun outer2() {
+	var x = "outside";
+	fun inner2() {
 		print(x);
 	}
-	inner();
-}
-outer();
 
-print("> complex");
-fun outer2() {
-  var x = "outside";
-  fun inner2() {
-    print(x);
-  }
-
-  return inner2;
+	return inner2;
 }
 
 var closure = outer2();
 closure();
 
+print("> complex");
+fun complex() {
+	var x = "value";
+	fun middle() {
+		fun inner() {
+			print(x);
+		}
+
+		print("create inner closure");
+		return inner;
+	}
+
+	print("return from outer");
+	return middle;
+}
+
+var mid = complex();
+var in = mid();
+in();
+
+print("> get and set");
 var globalSet;
 var globalGet;
 
-print("> get and set");
 fun main() {
 	var a = "initial";
 

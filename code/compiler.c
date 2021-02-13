@@ -554,7 +554,7 @@ static void do_function(Function_Type type) {
 	consume(TOKEN_LEFT_BRACE, "expected a '{");
 	do_block();
 
-	// redundant
+	// redundant: OP_RETURN does this implicitly
 	// end_scope();
 
 	Obj_Function * function = compiler_end();
