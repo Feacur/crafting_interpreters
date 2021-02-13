@@ -147,3 +147,12 @@ struct Obj_String * table_find_key_2(Table * table, char const * a_chars, uint32
 	return NULL;
 }
 
+typedef struct Obj Obj;
+
+void gc_mark_table(Table * table) {
+	for (uint32_t i = 0; i < table->capacity; i++) {
+		Entry * entry = &table->entries[i];
+		gc_mark_object((Obj *)entry->key);
+		gc_mark_value(entry->value);
+	}
+}

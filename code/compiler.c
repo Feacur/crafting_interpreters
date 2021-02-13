@@ -209,11 +209,12 @@ static void emit_loop(uint32_t target) {
 
 static void compiler_init(Compiler * compiler, Function_Type type) {
 	compiler->enclosing = current_compiler;
-	compiler->function = new_function();
+	compiler->function = NULL;
 	compiler->type = type;
 	compiler->local_count = 0;
 	compiler->scope_depth = 0;
 
+	compiler->function = new_function();
 	if (type != TYPE_SCRIPT) {
 		compiler->function->name = copy_string(parser.previous.start, parser.previous.length);
 	}
@@ -768,6 +769,12 @@ Obj_Function * compile(char const * source) {
 	}
 	Obj_Function * function = compiler_end();
 	return parser.had_error ? NULL : function;
+}
+
+void gc_mark_compiler_roots(void) {
+	for (Compiler * compiler = current_compiler; compiler != NULL; compiler = compiler->enclosing) {
+		gc_mark_object((Obj *)compiler->function);
+	}
 }
 
 // data

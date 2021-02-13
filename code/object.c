@@ -5,6 +5,10 @@
 #include "object.h"
 #include "vm.h"
 
+#if defined(DEBUG_GC_LOG)
+#include "debug.h"
+#endif
+
 #define ALLOCATE_OBJ(type, flexible, object_type) \
 	(type *)(void *)allocate_object(sizeof(type) + flexible, object_type)
 
@@ -17,8 +21,14 @@ typedef struct Obj Obj;
 
 static Obj * allocate_object(size_t size, Obj_Type type) {
 	Obj * object = (Obj *)reallocate(NULL, 0, size);
+#if defined(DEBUG_GC_LOG)
+	printf("%p allocate %zu, type %d\n", (void *)object, size, type);
+#endif
+
 	object->type = type;
+	object->is_marked = false;
 	object->next = vm.objects;
+
 	vm.objects = object;
 	return object;
 }
@@ -159,6 +169,10 @@ Obj_Upvalue * new_upvalue(Value * slot) {
 }
 
 void object_free(struct Obj * object) {
+#if defined(DEBUG_GC_LOG)
+	printf("%p free, type %d\n", (void *)object, object->type);
+#endif
+
 	switch (object->type) {
 		case OBJ_STRING: {
 			Obj_String * string = (Obj_String *)object;
@@ -192,4 +206,16 @@ void object_free(struct Obj * object) {
 			break;
 		}
 	}
+}
+
+void gc_mark_object(Obj * object) {
+	if (object == NULL) { return; }
+
+#if defined(DEBUG_GC_LOG)
+	printf("%p mark ", (void *)object);
+	print_object(object);
+	printf("\n");
+#endif
+
+	object->is_marked = true;
 }

@@ -13,6 +13,7 @@ typedef enum {
 
 struct Obj {
 	Obj_Type type;
+	bool is_marked;
 	struct Obj * next;
 };
 
@@ -80,5 +81,7 @@ struct Obj_Closure * new_closure(struct Obj_Function * function);
 struct Obj_Upvalue * new_upvalue(Value * slot);
 
 void object_free(struct Obj * object);
+
+void gc_mark_object(struct Obj * object);
 
 #endif

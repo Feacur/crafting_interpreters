@@ -46,3 +46,8 @@ void value_array_write(Value_Array * array, Value value) {
 	array->values[array->count] = value;
 	array->count++;
 }
+
+void gc_mark_value(Value value) {
+	if (!IS_OBJ(value)) { return; }
+	gc_mark_object(AS_OBJ(value));
+}
