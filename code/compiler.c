@@ -558,15 +558,19 @@ static void do_function(Function_Type type) {
 	// end_scope();
 
 	Obj_Function * function = compiler_end();
-	// emit_bytes(OP_CONSTANT, make_constant(TO_OBJ(function)));
 
-	emit_bytes(OP_CLOSURE, make_constant(TO_OBJ(function)));
-
-	for (uint32_t i = 0; i < function->upvalue_count; i++) {
-		emit_bytes(
-			compiler.upvalues[i].index,
-			compiler.upvalues[i].is_local ? 1 : 0
-		);
+	uint8_t function_constant = make_constant(TO_OBJ(function));
+	if (function->upvalue_count > 0) {
+		emit_bytes(OP_CLOSURE, function_constant);
+		for (uint32_t i = 0; i < function->upvalue_count; i++) {
+			emit_bytes(
+				compiler.upvalues[i].index,
+				compiler.upvalues[i].is_local ? 1 : 0
+			);
+		}
+	}
+	else {
+		emit_bytes(OP_CONSTANT, function_constant);
 	}
 }
 
