@@ -30,12 +30,15 @@ void * reallocate(void * pointer, size_t old_size, size_t new_size) {
 }
 
 void objects_free(void) {
+#if defined(VM_TRACK_OBJECTS)
 	Obj * object = vm.objects;
+	vm.objects = NULL;
 	while (object != NULL) {
 		Obj * next = object->next;
 		object_free(object);
 		object = next;
 	}
+#endif
 }
 
 typedef struct Obj_Upvalue Obj_Upvalue;

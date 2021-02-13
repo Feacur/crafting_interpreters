@@ -27,9 +27,12 @@ static Obj * allocate_object(size_t size, Obj_Type type) {
 
 	object->type = type;
 	object->is_marked = false;
-	object->next = vm.objects;
 
+#if defined(VM_TRACK_OBJECTS)
+	object->next = vm.objects;
 	vm.objects = object;
+#endif
+
 	return object;
 }
 
@@ -168,7 +171,18 @@ Obj_Upvalue * new_upvalue(Value * slot) {
 	return upvalue;
 }
 
-void object_free(struct Obj * object) {
+void object_free(Obj * object) {
+#if defined(VM_TRACK_OBJECTS)
+	if (object == vm.objects) {
+		vm.objects = object->next;
+	}
+	else if (object->next != NULL) {
+		for (Obj * prev = vm.objects; prev != NULL; prev = prev->next) {
+			if (prev->next == object) { prev->next = object->next; break; }
+		}
+	}
+#endif
+
 #if defined(DEBUG_GC_LOG)
 	printf("%p free, type %d\n", (void *)object, object->type);
 #endif

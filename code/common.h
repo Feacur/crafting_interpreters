@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define VM_TRACK_OBJECTS
 #define DEBUG_GC_STRESS
 #define DEBUG_GC_LOG
 #define DEBUG_PRINT_CODE
