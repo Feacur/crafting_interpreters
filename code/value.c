@@ -51,3 +51,9 @@ void gc_mark_value(Value value) {
 	if (!IS_OBJ(value)) { return; }
 	gc_mark_object(AS_OBJ(value));
 }
+
+void gc_mark_value_array(Value_Array * array) {
+	for (uint32_t i = 0; i < array->count; i++) {
+		gc_mark_value(array->values[i]);
+	}
+}

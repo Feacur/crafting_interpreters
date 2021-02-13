@@ -52,5 +52,6 @@ void value_array_free(Value_Array * array);
 void value_array_write(Value_Array * array, Value value);
 
 void gc_mark_value(Value value);
+void gc_mark_value_array(Value_Array * array);
 
 #endif

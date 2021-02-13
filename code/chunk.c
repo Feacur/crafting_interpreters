@@ -1,4 +1,5 @@
 #include "chunk.h"
+#include "vm.h"
 #include "memory.h"
 
 typedef struct Chunk Chunk;
@@ -32,6 +33,9 @@ void chunk_write(Chunk * chunk, uint8_t byte, uint32_t line) {
 }
 
 uint32_t chunk_add_constant(Chunk * chunk, Value value) {
+	// GC protection
+	vm_stack_push(value);
 	value_array_write(&chunk->constants, value);
+	vm_stack_pop();
 	return chunk->constants.count - 1;
 }

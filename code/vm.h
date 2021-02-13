@@ -24,6 +24,9 @@ struct VM {
 	struct Obj_Upvalue * open_upvalues;
 	struct Obj * objects;
 
+	uint32_t greyCapacity, greyCount;
+	struct Obj ** greyStack;
+
 	bool had_error;
 };
 

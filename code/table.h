@@ -26,5 +26,6 @@ struct Obj_String * table_find_key(Table * table, char const * chars, uint32_t l
 struct Obj_String * table_find_key_2(Table * table, char const * a_chars, uint32_t a_length, char const * b_chars, uint32_t b_length, uint32_t hash);
 
 void gc_mark_table(Table * table);
+void table_remove_white_keys(Table * table);
 
 #endif

@@ -14,7 +14,7 @@
 
 void * reallocate(void * pointer, size_t old_size, size_t new_size);
 
-void objects_free(void);
+void gc_objects_free(void);
 
 void collect_garbage(void);
 

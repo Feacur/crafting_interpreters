@@ -156,3 +156,12 @@ void gc_mark_table(Table * table) {
 		gc_mark_value(entry->value);
 	}
 }
+
+void table_remove_white_keys(Table * table) {
+	for (uint32_t i = 0; i < table->capacity; i++) {
+		Entry * entry = &table->entries[i];
+		if (entry->key != NULL && !entry->key->obj.is_marked) {
+			table_delete(table, entry->key);
+		}
+	}
+}

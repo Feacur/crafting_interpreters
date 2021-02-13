@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -28,10 +29,8 @@ static Obj * allocate_object(size_t size, Obj_Type type) {
 	object->type = type;
 	object->is_marked = false;
 
-#if defined(VM_TRACK_OBJECTS)
 	object->next = vm.objects;
 	vm.objects = object;
-#endif
 
 	return object;
 }
@@ -69,7 +68,11 @@ Obj_String * copy_string(char const * chars, uint32_t length) {
 	memcpy(string->chars, chars, length);
 	string->hash = hash;
 
+	// GC protection
+	vm_stack_push(TO_OBJ(string));
 	table_set(&vm.strings, string, TO_NIL());
+	vm_stack_pop();
+
 	return string;
 }
 
@@ -116,10 +119,7 @@ void print_object(Obj * object) {
 	}
 }
 
-Obj_String * strings_concatenate(Value value_a, Value value_b) {
-	Obj_String * a_string = AS_STRING(value_a);
-	Obj_String * b_string = AS_STRING(value_b);
-
+Obj_String * strings_concatenate(Obj_String * a_string, Obj_String * b_string) {
 	uint32_t hash = hash_string_2(a_string->hash, b_string->chars, b_string->length);
 	uint32_t length = a_string->length + b_string->length;
 	Obj_String * interned = table_find_key_2(&vm.strings, a_string->chars, a_string->length, b_string->chars, b_string->length, hash);
@@ -130,7 +130,11 @@ Obj_String * strings_concatenate(Value value_a, Value value_b) {
 	memcpy(string->chars + a_string->length, b_string->chars, sizeof(char) * b_string->length);
 	string->hash = hash;
 
+	// GC protection
+	vm_stack_push(TO_OBJ(string));
 	table_set(&vm.strings, string, TO_NIL());
+	vm_stack_pop();
+
 	return string;
 }
 
@@ -151,14 +155,15 @@ Obj_Native * new_native(Native_Fn * function, uint8_t arity) {
 }
 
 Obj_Closure * new_closure(Obj_Function * function) {
+	Obj_Upvalue ** upvalues = reallocate(NULL, 0, sizeof(Obj_Upvalue *) * function->upvalue_count);
+	for (uint32_t i = 0; i < function->upvalue_count; i++) {
+		upvalues[i] = NULL;
+	}
+
 	Obj_Closure * closure = ALLOCATE_OBJ(Obj_Closure, 0, OBJ_CLOSURE);
 	closure->function = function;
-
+	closure->upvalues = upvalues;
 	closure->upvalue_count = function->upvalue_count;
-	closure->upvalues = reallocate(NULL, 0, sizeof(Obj_Upvalue *) * function->upvalue_count);
-	for (uint32_t i = 0; i < function->upvalue_count; i++) {
-		closure->upvalues[i] = NULL;
-	}
 
 	return closure;
 }
@@ -171,18 +176,7 @@ Obj_Upvalue * new_upvalue(Value * slot) {
 	return upvalue;
 }
 
-void object_free(Obj * object) {
-#if defined(VM_TRACK_OBJECTS)
-	if (object == vm.objects) {
-		vm.objects = object->next;
-	}
-	else if (object->next != NULL) {
-		for (Obj * prev = vm.objects; prev != NULL; prev = prev->next) {
-			if (prev->next == object) { prev->next = object->next; break; }
-		}
-	}
-#endif
-
+void gc_object_free(Obj * object) {
 #if defined(DEBUG_GC_LOG)
 	printf("%p free, type %d\n", (void *)object, object->type);
 #endif
@@ -209,7 +203,7 @@ void object_free(Obj * object) {
 
 		case OBJ_CLOSURE: {
 			Obj_Closure * closure = (Obj_Closure *)object;
-			reallocate(closure->upvalues, sizeof(Obj_Upvalue *) * closure->upvalue_count, 0);
+			reallocate(closure->upvalues, sizeof(*closure->upvalues) * closure->upvalue_count, 0);
 			FREE_OBJ(closure, 0);
 			break;
 		}
@@ -224,6 +218,7 @@ void object_free(Obj * object) {
 
 void gc_mark_object(Obj * object) {
 	if (object == NULL) { return; }
+	if (object->is_marked) { return; }
 
 #if defined(DEBUG_GC_LOG)
 	printf("%p mark ", (void *)object);
@@ -232,4 +227,12 @@ void gc_mark_object(Obj * object) {
 #endif
 
 	object->is_marked = true;
+
+	if (vm.greyCapacity < vm.greyCount + 1) {
+		vm.greyCapacity = GROW_CAPACITY(vm.greyCapacity);
+		vm.greyStack = realloc(vm.greyStack, sizeof(*vm.greyStack) * vm.greyCapacity);
+		if (vm.greyStack == NULL) { exit(1); }
+	}
+
+	vm.greyStack[vm.greyCount++] = object;
 }

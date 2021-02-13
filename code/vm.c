@@ -65,8 +65,14 @@ void runtime_error(char const * format, ...) {
 
 void vm_init(void) {
 	stack_reset();
+
 	vm.objects = NULL;
 	vm.had_error = false;
+
+	vm.greyCapacity = 0;
+	vm.greyCount = 0;
+	vm.greyStack = NULL;
+
 	table_init(&vm.globals);
 	table_init(&vm.strings);
 }
@@ -74,7 +80,7 @@ void vm_init(void) {
 void vm_free(void) {
 	table_free(&vm.globals);
 	table_free(&vm.strings);
-	objects_free();
+	gc_objects_free();
 }
 
 static bool is_falsey(Value value) {
@@ -293,9 +299,13 @@ static Interpret_Result run(void) {
 
 			case OP_ADD: {
 				if (IS_STRING(vm_stack_peek(0)) && IS_STRING(vm_stack_peek(1))) {
-					Value b = vm_stack_pop();
-					Value a = vm_stack_pop();
-					vm_stack_push(TO_OBJ(strings_concatenate(a, b)));
+					// GC protection
+					Obj_String * b = AS_STRING(vm_stack_peek(0));
+					Obj_String * a = AS_STRING(vm_stack_peek(1));
+					Obj_String * string = strings_concatenate(a, b);
+					vm_stack_push(TO_OBJ(string));
+					vm_stack_pop();
+					vm_stack_pop();
 				}
 				else {
 					OP_BINARY(TO_NUMBER, +);
@@ -417,20 +427,24 @@ Interpret_Result vm_interpret(char const * source) {
 	Obj_Function * function = compile(source);
 	if (function == NULL) { return INTERPRET_COMPILE_ERROR; }
 
+	// GC protection
 	vm_stack_push(TO_OBJ(function));
 	Obj_Closure * closure = new_closure(function);
 	vm_stack_pop();
+
 	vm_stack_push(TO_OBJ(closure));
-	// call_function(function, 0);
-	call_value(vm.stack_top[-1], 0);
+	call_value(TO_OBJ(closure), 0);
 
 	return run();
 }
 
 void vm_define_native(char const * name, Native_Fn * function, uint8_t arity) {
-	vm_stack_push(TO_OBJ(copy_string(name, (uint32_t)strlen(name))));
-	vm_stack_push(TO_OBJ(new_native(function, arity)));
-	table_set(&vm.globals, AS_STRING(vm.stack_top[-2]), vm.stack_top[-1]);
+	// GC protection
+	Obj_String * obj_name = copy_string(name, (uint32_t)strlen(name));
+	vm_stack_push(TO_OBJ(obj_name));
+	Obj_Native * obj_native = new_native(function, arity);
+	vm_stack_push(TO_OBJ(obj_native));
+	table_set(&vm.globals, obj_name, TO_OBJ(obj_native));
 	vm_stack_pop();
 	vm_stack_pop();
 }

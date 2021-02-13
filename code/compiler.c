@@ -209,12 +209,16 @@ static void emit_loop(uint32_t target) {
 
 static void compiler_init(Compiler * compiler, Function_Type type) {
 	compiler->enclosing = current_compiler;
-	compiler->function = NULL;
 	compiler->type = type;
 	compiler->local_count = 0;
 	compiler->scope_depth = 0;
 
+	// GC protection
+	compiler->function = NULL;
 	compiler->function = new_function();
+
+	current_compiler = compiler;
+
 	if (type != TYPE_SCRIPT) {
 		compiler->function->name = copy_string(parser.previous.start, parser.previous.length);
 	}
@@ -224,8 +228,6 @@ static void compiler_init(Compiler * compiler, Function_Type type) {
 	local->is_captured = false;
 	local->name.start = "";
 	local->name.length = 0;
-
-	current_compiler = compiler;
 }
 
 static Obj_Function * compiler_end(void) {
@@ -269,8 +271,11 @@ static void parse_presedence(Precedence precedence) {
 	}
 }
 
+typedef struct Obj_String Obj_String;
+
 static uint8_t identifier_constant(Token * name) {
-	return make_constant(TO_OBJ(copy_string(name->start, name->length)));
+	Obj_String * obj_name = copy_string(name->start, name->length);
+	return make_constant(TO_OBJ(obj_name));
 }
 
 static uint32_t resolve_local(Compiler * compiler, Token * name) {
@@ -512,9 +517,8 @@ typedef struct Obj Obj;
 
 static void do_string(bool can_assign) {
 	(void)can_assign;
-	emit_constant(TO_OBJ(
-		(Obj *)copy_string(parser.previous.start + 1, parser.previous.length - 2)
-	));
+	Obj_String * string = copy_string(parser.previous.start + 1, parser.previous.length - 2);
+	emit_constant(TO_OBJ(string));
 }
 
 static void do_variable(bool can_assign) {

@@ -73,14 +73,14 @@ inline static bool is_obj_type(Value value, Obj_Type type) {
 }
 
 void print_object(struct Obj * object);
-struct Obj_String * strings_concatenate(Value a, Value b);
+struct Obj_String * strings_concatenate(struct Obj_String * a, struct Obj_String * b);
 
 struct Obj_Function * new_function(void);
 struct Obj_Native * new_native(Native_Fn * function, uint8_t arity);
 struct Obj_Closure * new_closure(struct Obj_Function * function);
 struct Obj_Upvalue * new_upvalue(Value * slot);
 
-void object_free(struct Obj * object);
+void gc_object_free(struct Obj * object);
 
 void gc_mark_object(struct Obj * object);
 
