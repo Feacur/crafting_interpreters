@@ -200,6 +200,7 @@ static void close_upvalues(Value * last) {
 }
 
 typedef struct Obj_String Obj_String;
+typedef struct Obj_Class Obj_Class;
 
 static Interpret_Result run(void) {
 	Call_Frame * frame = &vm.frames[vm.frame_count - 1];
@@ -207,7 +208,8 @@ static Interpret_Result run(void) {
 #define READ_BYTE() (*(frame->ip++))
 #define READ_SHORT() (frame->ip += 2, (uint16_t)(frame->ip[-2] << 8) | (uint16_t)frame->ip[-1])
 #define READ_CONSTANT() (get_frame_function(frame)->chunk.constants.values[READ_BYTE()])
-#define READ_STRING() AS_STRING(READ_CONSTANT())
+#define READ_CONSTANT_STRING() AS_STRING(READ_CONSTANT())
+#define READ_CONSTANT_FUNCTION() AS_FUNCTION(READ_CONSTANT())
 
 #define OP_BINARY(to_value, op) \
 	do { \
@@ -274,7 +276,7 @@ static Interpret_Result run(void) {
 			}
 
 			case OP_SET_GLOBAL: {
-				Obj_String * name = READ_STRING();
+				Obj_String * name = READ_CONSTANT_STRING();
 				if (table_set(&vm.globals, name, vm_stack_peek(0))) {
 					table_delete(&vm.globals, name);
 					runtime_error("undefined variable '%s'", name->chars);
@@ -284,7 +286,7 @@ static Interpret_Result run(void) {
 			}
 
 			case OP_GET_GLOBAL: {
-				Obj_String * name = READ_STRING();
+				Obj_String * name = READ_CONSTANT_STRING();
 				Value value;
 				if (!table_get(&vm.globals, name, &value)) {
 					runtime_error("undefined variable '%s'", name->chars);
@@ -295,7 +297,7 @@ static Interpret_Result run(void) {
 			}
 
 			case OP_DEFINE_GLOBAL: {
-				Obj_String * name = READ_STRING();
+				Obj_String * name = READ_CONSTANT_STRING();
 				table_set(&vm.globals, name, vm_stack_peek(0));
 				vm_stack_pop();
 				break;
@@ -369,7 +371,7 @@ static Interpret_Result run(void) {
 			}
 
 			case OP_CLOSURE: {
-				Obj_Function * function = AS_FUNCTION(READ_CONSTANT());
+				Obj_Function * function = READ_CONSTANT_FUNCTION();
 				Obj_Closure * closure = new_closure(function);
 				vm_stack_push(TO_OBJ(closure));
 
@@ -391,6 +393,13 @@ static Interpret_Result run(void) {
 			case OP_CLOSE_UPVALUE: {
 				close_upvalues(vm.stack_top - 1);
 				vm_stack_pop();
+				break;
+			}
+
+			case OP_CLASS: {
+				Obj_String * name = READ_CONSTANT_STRING();
+				Obj_Class * lox_class = new_class(name);
+				vm_stack_push(TO_OBJ(lox_class));
 				break;
 			}
 
@@ -417,7 +426,8 @@ static Interpret_Result run(void) {
 #undef READ_BYTE
 #undef READ_SHORT
 #undef READ_CONSTANT
-#undef READ_STRING
+#undef READ_CONSTANT_STRING
+#undef READ_CONSTANT_FUNCTION
 #undef OP_BINARY
 }
 

@@ -56,6 +56,7 @@ static void gc_mark_roots(void) {
 
 typedef struct Obj_Function Obj_Function;
 typedef struct Obj_Closure Obj_Closure;
+typedef struct Obj_Class Obj_Class;
 
 static void object_mark_black(Obj * object) {
 #if defined(DEBUG_TRACE_GC)
@@ -68,11 +69,6 @@ static void object_mark_black(Obj * object) {
 		case OBJ_STRING:
 		case OBJ_NATIVE:
 			break;
-
-		case OBJ_UPVALUE: {
-			gc_mark_value(((Obj_Upvalue *)object)->closed);
-			break;
-		}
 
 		case OBJ_FUNCTION: {
 			Obj_Function * function = (Obj_Function *)object;
@@ -88,6 +84,16 @@ static void object_mark_black(Obj * object) {
 				gc_mark_object((Obj *)closure->upvalues[i]);
 			}
 			break;
+		}
+
+		case OBJ_UPVALUE: {
+			gc_mark_value(((Obj_Upvalue *)object)->closed);
+			break;
+		}
+
+		case OBJ_CLASS: {
+			Obj_Class * lox_class = (Obj_Class *)object;
+			gc_mark_object((Obj *)lox_class->name);
 		}
 	}
 }

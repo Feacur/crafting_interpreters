@@ -121,6 +121,8 @@ uint32_t chunk_disassemble_instruction(Chunk * chunk, uint32_t offset) {
 		}
 		case OP_CLOSE_UPVALUE:
 			return simple_instruction("OP_CLOSE_UPVALUE", offset);
+		case OP_CLASS:
+			return constant_instruction("OP_CLASS", chunk, offset);
 		case OP_RETURN:
 			return simple_instruction("OP_RETURN", offset);
 	}

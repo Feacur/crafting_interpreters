@@ -76,15 +76,17 @@ typedef struct Obj_Function Obj_Function;
 typedef struct Obj_Native Obj_Native;
 typedef struct Obj_Closure Obj_Closure;
 typedef struct Obj_Upvalue Obj_Upvalue;
+typedef struct Obj_Class Obj_Class;
 
 void print_object(Obj * object) {
 	switch (object->type) {
 		case OBJ_STRING:
-			printf("%s", ((Obj_String *)object)->chars);
+			Obj_String * string = (Obj_String *)object;
+			printf("%s", string->chars);
 			break;
 
 		case OBJ_FUNCTION: {
-			Obj_Function * function = ((Obj_Function *)object);
+			Obj_Function * function = (Obj_Function *)object;
 			if (function->name == NULL) {
 				printf("<script>");
 			}
@@ -95,21 +97,27 @@ void print_object(Obj * object) {
 		}
 
 		case OBJ_NATIVE: {
-			// Obj_Native * native = ((Obj_Native *)object);
+			// Obj_Native * native = (Obj_Native *)object;
 			printf("<native fn>");
 			break;
 		}
 
 		case OBJ_CLOSURE: {
-			Obj_Closure * closure = ((Obj_Closure *)object);
+			Obj_Closure * closure = (Obj_Closure *)object;
 			print_object((Obj *)closure->function);
 			break;
 		}
 
 		case OBJ_UPVALUE: {
-			// Obj_Upvalue * upvalue = ((Obj_Upvalue *)object);
+			// Obj_Upvalue * upvalue = (Obj_Upvalue *)object;
 			// value_print(*upvalue->location);
 			printf("upvalue");
+			break;
+		}
+
+		case OBJ_CLASS: {
+			Obj_Class * lox_class = (Obj_Class *)object;
+			printf("%s", lox_class->name->chars);
 			break;
 		}
 	}
@@ -172,6 +180,12 @@ Obj_Upvalue * new_upvalue(Value * slot) {
 	return upvalue;
 }
 
+Obj_Class * new_class(Obj_String * name) {
+	Obj_Class * lox_class = ALLOCATE_OBJ(Obj_Class, 0, OBJ_CLASS);
+	lox_class->name = name;
+	return lox_class;
+}
+
 void gc_free_object(Obj * object) {
 #if defined(DEBUG_TRACE_GC)
 	printf("%p free, type %d\n", (void *)object, object->type);
@@ -205,8 +219,14 @@ void gc_free_object(Obj * object) {
 		}
 
 		case OBJ_UPVALUE: {
-			Obj_Upvalue * upvalue = ((Obj_Upvalue *)object);
+			Obj_Upvalue * upvalue = (Obj_Upvalue *)object;
 			FREE_OBJ(upvalue, 0);
+			break;
+		}
+
+		case OBJ_CLASS: {
+			Obj_Class * lox_class = (Obj_Class *)object;
+			FREE_OBJ(lox_class, 0);
 			break;
 		}
 	}

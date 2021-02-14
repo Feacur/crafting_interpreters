@@ -609,6 +609,18 @@ static void do_fun_declaration(void) {
 	define_variable(global);
 }
 
+static void do_class_declaration(void) {
+	consume(TOKEN_IDENTIFIER, "expected a class name");
+	uint8_t name_constant = identifier_constant(&parser.previous);
+	declare_variable();
+
+	emit_bytes(OP_CLASS, name_constant);
+	define_variable(name_constant);
+
+	consume(TOKEN_LEFT_BRACE, "expected a '{'");
+	consume(TOKEN_RIGHT_BRACE, "expected a '}'");
+}
+
 static void do_declaration(void);
 static void do_block(void) {
 	while (parser.current.type != TOKEN_EOF && parser.current.type != TOKEN_RIGHT_BRACE) {
@@ -750,6 +762,9 @@ static void do_declaration(void) {
 	}
 	else if (compiler_match(TOKEN_FUN)) {
 		do_fun_declaration();
+	}
+	else if (compiler_match(TOKEN_CLASS)) {
+		do_class_declaration();
 	}
 	else {
 		do_statement();
