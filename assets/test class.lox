@@ -1,3 +1,4 @@
 print("> classes");
 class lox_class { }
 print(lox_class);
+print(lox_class());

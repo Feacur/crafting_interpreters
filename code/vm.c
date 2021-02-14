@@ -145,6 +145,13 @@ inline static bool call_closure(Obj_Closure * closure, uint8_t arg_count) {
 	return call((Obj *)closure, closure->function, arg_count);
 }
 
+typedef struct Obj_Class Obj_Class;
+
+static bool call_class(Obj_Class * class, uint8_t arg_count) {
+	vm.stack_top[-(int32_t)(arg_count + 1)] = TO_OBJ(new_instance(class));
+	return true;
+}
+
 static bool call_value(Value callee, uint8_t arg_count) {
 	if (IS_OBJ(callee)) {
 		switch (OBJ_TYPE(callee)) {
@@ -154,6 +161,8 @@ static bool call_value(Value callee, uint8_t arg_count) {
 				return call_native(AS_NATIVE(callee), arg_count);
 			case OBJ_CLOSURE:
 				return call_closure(AS_CLOSURE(callee), arg_count);
+			case OBJ_CLASS:
+				return call_class(AS_CLASS(callee), arg_count);
 			default: break;
 		}
 	}

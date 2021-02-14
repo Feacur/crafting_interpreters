@@ -2,6 +2,7 @@
 #define LOX_OBJECT
 
 #include "chunk.h"
+#include "table.h"
 
 typedef enum {
 	OBJ_STRING,
@@ -10,6 +11,7 @@ typedef enum {
 	OBJ_CLOSURE,
 	OBJ_UPVALUE,
 	OBJ_CLASS,
+	OBJ_INSTANCE,
 } Obj_Type;
 
 struct Obj {
@@ -58,6 +60,12 @@ struct Obj_Class {
 	struct Obj_String * name;
 };
 
+struct Obj_Instance {
+	struct Obj obj;
+	struct Obj_Class * lox_class;
+	Table table;
+};
+
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
 #define IS_STRING(value) is_obj_type(value, OBJ_STRING)
@@ -66,6 +74,7 @@ struct Obj_Class {
 #define IS_CLOSURE(value) is_obj_type(value, OBJ_CLOSURE)
 #define IS_UPVALUE(value) is_obj_type(value, OBJ_UPVALUE)
 #define IS_CLASS(value) is_obj_type(value, OBJ_CLASS)
+#define IS_INSTANCE(value) is_obj_type(value, OBJ_INSTANCE)
 
 #define AS_STRING(value) ((struct Obj_String *)(void *)AS_OBJ(value))
 #define AS_FUNCTION(value) ((struct Obj_Function *)(void *)AS_OBJ(value))
@@ -73,6 +82,7 @@ struct Obj_Class {
 #define AS_CLOSURE(value) ((struct Obj_Closure *)(void *)AS_OBJ(value))
 #define AS_UPVALUE(value) ((struct Obj_Upvalue *)(void *)AS_OBJ(value))
 #define AS_CLASS(value) ((struct Obj_Class *)(void *)AS_OBJ(value))
+#define AS_INSTANCE(value) ((struct Obj_INSTANCE *)(void *)AS_OBJ(value))
 
 struct Obj_String * copy_string(char const * chars, uint32_t length);
 
@@ -88,6 +98,7 @@ struct Obj_Native * new_native(Native_Fn * function, uint8_t arity);
 struct Obj_Closure * new_closure(struct Obj_Function * function);
 struct Obj_Upvalue * new_upvalue(Value * slot);
 struct Obj_Class * new_class(struct Obj_String * name);
+struct Obj_Instance * new_instance(struct Obj_Class * lox_class);
 
 void gc_free_object(struct Obj * object);
 

@@ -77,6 +77,7 @@ typedef struct Obj_Native Obj_Native;
 typedef struct Obj_Closure Obj_Closure;
 typedef struct Obj_Upvalue Obj_Upvalue;
 typedef struct Obj_Class Obj_Class;
+typedef struct Obj_Instance Obj_Instance;
 
 void print_object(Obj * object) {
 	switch (object->type) {
@@ -118,6 +119,12 @@ void print_object(Obj * object) {
 		case OBJ_CLASS: {
 			Obj_Class * lox_class = (Obj_Class *)object;
 			printf("%s", lox_class->name->chars);
+			break;
+		}
+
+		case OBJ_INSTANCE: {
+			Obj_Instance * instance = (Obj_Instance *)object;
+			printf("%s instance", instance->lox_class->name->chars);
 			break;
 		}
 	}
@@ -186,6 +193,13 @@ Obj_Class * new_class(Obj_String * name) {
 	return lox_class;
 }
 
+Obj_Instance * new_instance(Obj_Class * lox_class) {
+	Obj_Instance * instance = ALLOCATE_OBJ(Obj_Instance, 0, OBJ_INSTANCE);
+	instance->lox_class = lox_class;
+	table_init(&instance->table);
+	return instance;
+}
+
 void gc_free_object(Obj * object) {
 #if defined(DEBUG_TRACE_GC)
 	printf("%p free, type %d\n", (void *)object, object->type);
@@ -229,15 +243,22 @@ void gc_free_object(Obj * object) {
 			FREE_OBJ(lox_class, 0);
 			break;
 		}
+
+		case OBJ_INSTANCE: {
+			Obj_Instance * instance = (Obj_Instance *)object;
+			table_free(&instance->table);
+			FREE_OBJ(instance, 0);
+			break;
+		}
 	}
 }
 
-void gc_mark_object(Obj * object) {
+void gc_mark_object_grey(Obj * object) {
 	if (object == NULL) { return; }
 	if (object->is_marked) { return; }
 
 #if defined(DEBUG_TRACE_GC)
-	printf("%p mark ", (void *)object);
+	printf("%p mark grey ", (void *)object);
 	print_object(object);
 	printf("\n");
 #endif // DEBUG_TRACE_GC
@@ -289,6 +310,13 @@ void gc_mark_object_black(Obj * object) {
 		case OBJ_CLASS: {
 			Obj_Class * lox_class = (Obj_Class *)object;
 			gc_mark_object_grey((Obj *)lox_class->name);
+			break;
+		}
+
+		case OBJ_INSTANCE: {
+			Obj_Instance * instance = (Obj_Instance *)object;
+			gc_mark_object_grey((Obj *)instance->lox_class);
+			gc_mark_table_grey(&instance->table);
 			break;
 		}
 	}
