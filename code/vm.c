@@ -39,6 +39,7 @@ inline static Obj_Function * get_frame_function(Call_Frame * frame) {
 __attribute__((format(printf, 1, 2)))
 #endif // __clang__
 void runtime_error(char const * format, ...) {
+	DEBUG_BREAK();
 	va_list args;
 	va_start(args, format);
 	vfprintf(stderr, format, args);

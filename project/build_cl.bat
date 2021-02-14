@@ -22,16 +22,20 @@ set includes=-I".."
 set defines=-D_CRT_SECURE_NO_WARNINGS
 set libs=
 set warnings=-WX -W4
-set compiler=-nologo -diagnostics:caret -EHa- -GR- %includes% %defines% -Fo"./temp/"
-set linker=-nologo -WX -subsystem:console %libs%
+set compiler=-nologo -diagnostics:caret -EHa- -GR- -Fo"./temp/"
+set linker=-nologo -WX -subsystem:console
 
 if defined debug (
+	set defines=%defines% -DLOX_TARGET_DEBUG
 	set compiler=%compiler% -Od -Zi
 	set linker=%linker% -debug:full
 ) else (
 	set compiler=%compiler% -O2
 	set linker=%linker% -debug:none
 )
+
+set compiler=%compiler% %includes% %defines%
+set linker=%linker% %libs%
 
 if defined unity_build (
 	set linker=-link %linker%

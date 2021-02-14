@@ -78,6 +78,7 @@ static Chunk * current_chunk(void) {
 
 // errors
 static void error_at(Token * token, char const * message) {
+	DEBUG_BREAK();
 	if (parser.panic_mode) { return; }
 	parser.panic_mode = true;
 
