@@ -443,8 +443,8 @@ static void do_expression(void) {
 
 static void do_number(bool can_assign) {
 	(void)can_assign;
-	Value value = TO_NUMBER(strtod(parser.previous.start, NULL));
-	emit_constant(value);
+	double number = strtod(parser.previous.start, NULL);
+	emit_constant(TO_NUMBER(number));
 }
 
 static void do_unary(bool can_assign) {
