@@ -427,13 +427,8 @@ Interpret_Result vm_interpret(char const * source) {
 	Obj_Function * function = compile(source);
 	if (function == NULL) { return INTERPRET_COMPILE_ERROR; }
 
-	// GC protection
 	vm_stack_push(TO_OBJ(function));
-	Obj_Closure * closure = new_closure(function);
-	vm_stack_pop();
-
-	vm_stack_push(TO_OBJ(closure));
-	call_value(TO_OBJ(closure), 0);
+	call_function(function, 0);
 
 	return run();
 }
