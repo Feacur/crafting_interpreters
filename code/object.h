@@ -80,7 +80,7 @@ struct Obj_Native * new_native(Native_Fn * function, uint8_t arity);
 struct Obj_Closure * new_closure(struct Obj_Function * function);
 struct Obj_Upvalue * new_upvalue(Value * slot);
 
-void gc_object_free(struct Obj * object);
+void gc_free_object(struct Obj * object);
 
 void gc_mark_object(struct Obj * object);
 

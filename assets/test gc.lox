@@ -1,0 +1,13 @@
+print("> start");
+var start = clock();
+var counter = 0;
+for (var i = 0; i < 1000000; i = i + 1) {
+	var a = i;
+	fun closure() {
+		return a + 10;
+	}
+	counter = counter + closure();
+}
+print(counter);
+print("> end");
+print(clock() - start);

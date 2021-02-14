@@ -10,7 +10,7 @@
 
 #if defined(DEBUG_TRACE_EXECUTION)
 #include "debug.h"
-#endif
+#endif // DEBUG_TRACE_EXECUTION
 
 typedef struct VM VM;
 VM vm;
@@ -73,21 +73,33 @@ void vm_init(void) {
 	vm.greyCount = 0;
 	vm.greyStack = NULL;
 
+	vm.bytes_allocated = 0;
+	vm.next_gc = 1024 * 1024;
+
 	table_init(&vm.globals);
 	table_init(&vm.strings);
+}
+
+typedef struct Obj Obj;
+
+static void gc_free_objects(void) {
+	Obj * object = vm.objects;
+	while (object != NULL) {
+		Obj * next = object->next;
+		gc_free_object(object);
+		object = next;
+	}
 }
 
 void vm_free(void) {
 	table_free(&vm.globals);
 	table_free(&vm.strings);
-	gc_objects_free();
+	gc_free_objects();
 }
 
 static bool is_falsey(Value value) {
 	return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
 }
-
-typedef struct Obj Obj;
 
 static bool call(Obj * callee, Obj_Function * function, uint8_t arg_count) {
 	if (arg_count != function->arity) {
@@ -216,7 +228,8 @@ static Interpret_Result run(void) {
 			printf(" ]");
 		}
 		printf("\n");
-		chunk_disassemble_instruction(&frame->function->chunk, (uint32_t)(frame->ip - frame->function->chunk.code));
+		struct Chunk * disasseble_frame_chunk = &get_frame_function(frame)->chunk;
+		chunk_disassemble_instruction(disasseble_frame_chunk, (uint32_t)(frame->ip - disasseble_frame_chunk->code));
 #endif // DEBUG_TRACE_EXECUTION
 
 		Op_Code instruction;

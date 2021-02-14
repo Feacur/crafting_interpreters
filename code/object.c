@@ -6,10 +6,6 @@
 #include "object.h"
 #include "vm.h"
 
-#if defined(DEBUG_GC_LOG)
-#include "debug.h"
-#endif
-
 #define ALLOCATE_OBJ(type, flexible, object_type) \
 	(type *)(void *)allocate_object(sizeof(type) + flexible, object_type)
 
@@ -22,9 +18,9 @@ typedef struct Obj Obj;
 
 static Obj * allocate_object(size_t size, Obj_Type type) {
 	Obj * object = (Obj *)reallocate(NULL, 0, size);
-#if defined(DEBUG_GC_LOG)
+#if defined(DEBUG_TRACE_GC)
 	printf("%p allocate %zu, type %d\n", (void *)object, size, type);
-#endif
+#endif // DEBUG_TRACE_GC
 
 	object->type = type;
 	object->is_marked = false;
@@ -176,10 +172,10 @@ Obj_Upvalue * new_upvalue(Value * slot) {
 	return upvalue;
 }
 
-void gc_object_free(Obj * object) {
-#if defined(DEBUG_GC_LOG)
+void gc_free_object(Obj * object) {
+#if defined(DEBUG_TRACE_GC)
 	printf("%p free, type %d\n", (void *)object, object->type);
-#endif
+#endif // DEBUG_TRACE_GC
 
 	switch (object->type) {
 		case OBJ_STRING: {
@@ -220,11 +216,11 @@ void gc_mark_object(Obj * object) {
 	if (object == NULL) { return; }
 	if (object->is_marked) { return; }
 
-#if defined(DEBUG_GC_LOG)
+#if defined(DEBUG_TRACE_GC)
 	printf("%p mark ", (void *)object);
 	print_object(object);
 	printf("\n");
-#endif
+#endif // DEBUG_TRACE_GC
 
 	object->is_marked = true;
 

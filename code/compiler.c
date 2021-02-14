@@ -6,9 +6,9 @@
 #include "compiler.h"
 #include "scanner.h"
 
-#if defined(DEBUG_PRINT_CODE)
+#if defined(DEBUG_PRINT_BYTECODE)
 #include "debug.h"
-#endif // DEBUG_PRINT_CODE
+#endif // DEBUG_PRINT_BYTECODE
 
 typedef struct {
 	Token current;
@@ -235,12 +235,12 @@ static Obj_Function * compiler_end(void) {
 
 	Obj_Function * function = current_compiler->function;
 
-#if defined(DEBUG_PRINT_CODE)
+#if defined(DEBUG_PRINT_BYTECODE)
 	if (!parser.had_error) {
 		chunk_disassemble(current_chunk(), function->name != NULL ? function->name->chars : "<script>");
 		printf("\n");
 	}
-#endif // DEBUG_PRINT_CODE
+#endif // DEBUG_PRINT_BYTECODE
 
 	current_compiler = current_compiler->enclosing;
 	return function;

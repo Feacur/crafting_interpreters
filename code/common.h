@@ -5,9 +5,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define DEBUG_GC_STRESS
-#define DEBUG_GC_LOG
-#define DEBUG_PRINT_CODE
+// #define DEBUG_GC_STRESS
+// #define DEBUG_PRINT_BYTECODE
+// #define DEBUG_TRACE_GC
 // #define DEBUG_TRACE_EXECUTION
 
 #define FRAMES_MAX 64

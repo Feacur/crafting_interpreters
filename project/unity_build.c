@@ -8,6 +8,6 @@
 #include "code/vm.c"
 #include "code/main.c"
 
-#if defined(DEBUG_TRACE_EXECUTION) || defined(DEBUG_PRINT_CODE)
+#if defined(DEBUG_TRACE_EXECUTION) || defined(DEBUG_PRINT_BYTECODE)
 #include "code/debug.c"
-#endif // DEBUG_TRACE_EXECUTION, DEBUG_PRINT_CODE
+#endif // DEBUG_TRACE_EXECUTION, DEBUG_PRINT_BYTECODE

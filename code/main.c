@@ -5,7 +5,6 @@
 
 #include "common.h"
 #include "chunk.h"
-#include "debug.h"
 #include "vm.h"
 
 static Value native_clock(uint8_t arg_count, Value * args) {

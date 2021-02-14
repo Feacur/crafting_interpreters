@@ -27,6 +27,9 @@ struct VM {
 	uint32_t greyCapacity, greyCount;
 	struct Obj ** greyStack;
 
+	size_t bytes_allocated;
+	size_t next_gc;
+
 	bool had_error;
 };
 
