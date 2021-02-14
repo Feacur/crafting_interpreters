@@ -252,3 +252,44 @@ void gc_mark_object(Obj * object) {
 
 	vm.greyStack[vm.greyCount++] = object;
 }
+
+void gc_mark_object_black(Obj * object) {
+#if defined(DEBUG_TRACE_GC)
+	printf("%p mark black ", (void *)object);
+	print_object((Obj *)object);
+	printf("\n");
+#endif
+
+	switch (object->type) {
+		case OBJ_STRING:
+		case OBJ_NATIVE:
+			break;
+
+		case OBJ_FUNCTION: {
+			Obj_Function * function = (Obj_Function *)object;
+			gc_mark_object_grey((Obj *)function->name);
+			gc_mark_value_array_grey(&function->chunk.constants);
+			break;
+		}
+
+		case OBJ_CLOSURE: {
+			Obj_Closure * closure = (Obj_Closure *)object;
+			gc_mark_object_grey((Obj *)closure->function);
+			for (uint32_t i = 0; i < closure->upvalue_count; i++) {
+				gc_mark_object_grey((Obj *)closure->upvalues[i]);
+			}
+			break;
+		}
+
+		case OBJ_UPVALUE: {
+			gc_mark_value_grey(((Obj_Upvalue *)object)->closed);
+			break;
+		}
+
+		case OBJ_CLASS: {
+			Obj_Class * lox_class = (Obj_Class *)object;
+			gc_mark_object_grey((Obj *)lox_class->name);
+			break;
+		}
+	}
+}

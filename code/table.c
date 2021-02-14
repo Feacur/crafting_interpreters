@@ -149,15 +149,15 @@ struct Obj_String * table_find_key_2(Table * table, char const * a_chars, uint32
 
 typedef struct Obj Obj;
 
-void gc_mark_table(Table * table) {
+void gc_mark_table_grey(Table * table) {
 	for (uint32_t i = 0; i < table->capacity; i++) {
 		Entry * entry = &table->entries[i];
-		gc_mark_object((Obj *)entry->key);
-		gc_mark_value(entry->value);
+		gc_mark_object_grey((Obj *)entry->key);
+		gc_mark_value_grey(entry->value);
 	}
 }
 
-void table_remove_white_keys(Table * table) {
+void gc_table_remove_white_keys(Table * table) {
 	for (uint32_t i = 0; i < table->capacity; i++) {
 		Entry * entry = &table->entries[i];
 		if (entry->key != NULL && !entry->key->obj.is_marked) {

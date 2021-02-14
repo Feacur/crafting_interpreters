@@ -47,13 +47,13 @@ void value_array_write(Value_Array * array, Value value) {
 	array->count++;
 }
 
-void gc_mark_value(Value value) {
+void gc_mark_value_grey(Value value) {
 	if (!IS_OBJ(value)) { return; }
-	gc_mark_object(AS_OBJ(value));
+	gc_mark_object_grey(AS_OBJ(value));
 }
 
-void gc_mark_value_array(Value_Array * array) {
+void gc_mark_value_array_grey(Value_Array * array) {
 	for (uint32_t i = 0; i < array->count; i++) {
-		gc_mark_value(array->values[i]);
+		gc_mark_value_grey(array->values[i]);
 	}
 }

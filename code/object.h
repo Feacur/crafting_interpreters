@@ -91,6 +91,7 @@ struct Obj_Class * new_class(struct Obj_String * name);
 
 void gc_free_object(struct Obj * object);
 
-void gc_mark_object(struct Obj * object);
+void gc_mark_object_grey(struct Obj * object);
+void gc_mark_object_black(struct Obj * object);
 
 #endif

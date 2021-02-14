@@ -791,9 +791,9 @@ Obj_Function * compile(char const * source) {
 	return parser.had_error ? NULL : function;
 }
 
-void gc_mark_compiler_roots(void) {
+void gc_mark_compiler_roots_grey(void) {
 	for (Compiler * compiler = current_compiler; compiler != NULL; compiler = compiler->enclosing) {
-		gc_mark_object((Obj *)compiler->function);
+		gc_mark_object_grey((Obj *)compiler->function);
 	}
 }
 

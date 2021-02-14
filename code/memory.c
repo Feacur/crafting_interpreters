@@ -38,74 +38,31 @@ void * reallocate(void * pointer, size_t old_size, size_t new_size) {
 
 typedef struct Obj_Upvalue Obj_Upvalue;
 
-static void gc_mark_roots(void) {
+static void gc_mark_roots_grey(void) {
 	for (Value * slot = vm.stack; slot < vm.stack_top; slot++) {
-		gc_mark_value(*slot);
+		gc_mark_value_grey(*slot);
 	}
 
 	for (uint32_t i = 0; i < vm.frame_count; i++) {
-		gc_mark_object(vm.frames[i].function);
+		gc_mark_object_grey(vm.frames[i].function);
 	}
 
 	for (Obj_Upvalue * upvalue = vm.open_upvalues; upvalue != NULL; upvalue = upvalue->next) {
-		gc_mark_object((Obj *)upvalue);
+		gc_mark_object_grey((Obj *)upvalue);
 	}
 
-	gc_mark_table(&vm.globals);
+	// `vm.strings` is a weak-references root
+	gc_mark_table_grey(&vm.globals);
 }
 
-typedef struct Obj_Function Obj_Function;
-typedef struct Obj_Closure Obj_Closure;
-typedef struct Obj_Class Obj_Class;
-
-static void object_mark_black(Obj * object) {
-#if defined(DEBUG_TRACE_GC)
-	printf("%p mark black ", (void *)object);
-	print_object((Obj *)object);
-	printf("\n");
-#endif
-
-	switch (object->type) {
-		case OBJ_STRING:
-		case OBJ_NATIVE:
-			break;
-
-		case OBJ_FUNCTION: {
-			Obj_Function * function = (Obj_Function *)object;
-			gc_mark_object((Obj *)function->name);
-			gc_mark_value_array(&function->chunk.constants);
-			break;
-		}
-
-		case OBJ_CLOSURE: {
-			Obj_Closure * closure = (Obj_Closure *)object;
-			gc_mark_object((Obj *)closure->function);
-			for (uint32_t i = 0; i < closure->upvalue_count; i++) {
-				gc_mark_object((Obj *)closure->upvalues[i]);
-			}
-			break;
-		}
-
-		case OBJ_UPVALUE: {
-			gc_mark_value(((Obj_Upvalue *)object)->closed);
-			break;
-		}
-
-		case OBJ_CLASS: {
-			Obj_Class * lox_class = (Obj_Class *)object;
-			gc_mark_object((Obj *)lox_class->name);
-		}
-	}
-}
-
-static void trace_references(void) {
+static void gc_grey_to_black(void) {
 	while (vm.greyCount > 0) {
 		Obj * object = vm.greyStack[--vm.greyCount];
-		object_mark_black(object);
+		gc_mark_object_black(object);
 	}
 }
 
-static void gc_sweep(void) {
+static void gc_sweep_white(void) {
 	Obj * previous = NULL;
 	Obj * object = vm.objects;
 
@@ -139,11 +96,11 @@ void gc_run(void) {
 	printf("-- gc begin\n");
 #endif // DEBUG_TRACE_GC
 
-	gc_mark_roots();
-	gc_mark_compiler_roots();
-	trace_references();
-	table_remove_white_keys(&vm.strings);
-	gc_sweep();
+	gc_mark_roots_grey();
+	gc_mark_compiler_roots_grey();
+	gc_grey_to_black();
+	gc_table_remove_white_keys(&vm.strings);
+	gc_sweep_white();
 
 #if defined(DEBUG_TRACE_GC)
 	printf("-- gc end\n");
