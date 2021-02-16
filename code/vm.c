@@ -210,6 +210,7 @@ static void close_upvalues(Value * last) {
 
 typedef struct Obj_String Obj_String;
 typedef struct Obj_Class Obj_Class;
+typedef struct Obj_Instance Obj_Instance;
 
 static Interpret_Result run(void) {
 	Call_Frame * frame = &vm.frames[vm.frame_count - 1];
@@ -302,6 +303,43 @@ static Interpret_Result run(void) {
 				uint8_t slot = READ_BYTE();
 				Obj_Closure * frame_closure = (Obj_Closure *)frame->function;
 				vm_stack_push(*frame_closure->upvalues[slot]->location);
+				break;
+			}
+
+			case OP_SET_PROPERTY: {
+				if (!IS_INSTANCE(vm_stack_peek(1))) {
+					runtime_error("only instances have fields");
+					return INTERPRET_RUNTIME_ERROR;
+				}
+
+				Obj_Instance * instance = AS_INSTANCE(vm_stack_peek(1));
+				Obj_String * name = READ_CONSTANT_STRING();
+
+				table_set(&instance->table, name, vm_stack_peek(0));
+
+				Value value = vm_stack_pop();
+				vm_stack_pop();
+				vm_stack_push(value);
+				break;
+			}
+
+			case OP_GET_PROPERTY: {
+				if (!IS_INSTANCE(vm_stack_peek(0))) {
+					runtime_error("only instances have properties");
+					return INTERPRET_RUNTIME_ERROR;
+				}
+
+				Obj_Instance * instance = AS_INSTANCE(vm_stack_peek(0));
+				Obj_String * name = READ_CONSTANT_STRING();
+
+				Value value;
+				if (!table_get(&instance->table, name, &value)) {
+					runtime_error("undefined property '%s'", name->chars);
+					return INTERPRET_RUNTIME_ERROR;
+				}
+
+				vm_stack_pop();
+				vm_stack_push(value);
 				break;
 			}
 

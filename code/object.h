@@ -82,7 +82,7 @@ struct Obj_Instance {
 #define AS_CLOSURE(value) ((struct Obj_Closure *)(void *)AS_OBJ(value))
 #define AS_UPVALUE(value) ((struct Obj_Upvalue *)(void *)AS_OBJ(value))
 #define AS_CLASS(value) ((struct Obj_Class *)(void *)AS_OBJ(value))
-#define AS_INSTANCE(value) ((struct Obj_INSTANCE *)(void *)AS_OBJ(value))
+#define AS_INSTANCE(value) ((struct Obj_Instance *)(void *)AS_OBJ(value))
 
 struct Obj_String * copy_string(char const * chars, uint32_t length);
 

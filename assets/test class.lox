@@ -2,3 +2,11 @@ print("> classes");
 class lox_class { }
 print(lox_class);
 print(lox_class());
+
+print("> pairs");
+class Pair {}
+
+var pair = Pair();
+pair.first = 1;
+pair.second = 2;
+print(pair.first + pair.second);

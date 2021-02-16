@@ -538,6 +538,19 @@ static void do_call(bool can_assign) {
 	emit_bytes(OP_CALL, arg_count);
 }
 
+static void do_dot(bool can_assign) {
+	consume(TOKEN_IDENTIFIER, "expected an identifier");
+	uint8_t name = identifier_constant(&parser.previous);
+
+	if (can_assign && compiler_match(TOKEN_EQUAL)) {
+		do_expression();
+		emit_bytes(OP_SET_PROPERTY, name);
+	}
+	else {
+		emit_bytes(OP_GET_PROPERTY, name);
+	}
+}
+
 static void do_block(void);
 static void do_function(Function_Type type) {
 	Compiler compiler;
@@ -804,7 +817,7 @@ static Parse_Rule rules[] = {
 	// [TOKEN_LEFT_BRACE]    = {NULL,        NULL,      PREC_NONE},
 	// [TOKEN_RIGHT_BRACE]   = {NULL,        NULL,      PREC_NONE},
 	// [TOKEN_COMMA]         = {NULL,        NULL,      PREC_NONE},
-	// [TOKEN_DOT]           = {NULL,        NULL,      PREC_NONE},
+	[TOKEN_DOT]           = {NULL,        do_dot,    PREC_CALL},
 	[TOKEN_MINUS]         = {do_unary,    do_binary, PREC_TERM},
 	[TOKEN_PLUS]          = {NULL,        do_binary, PREC_TERM},
 	// [TOKEN_SEMICOLON]     = {NULL,        NULL,      PREC_NONE},

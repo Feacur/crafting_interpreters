@@ -62,6 +62,8 @@ uint32_t chunk_disassemble_instruction(Chunk * chunk, uint32_t offset) {
 		case OP_GET_GLOBAL:   return constant_instruction("OP_GET_GLOBAL", chunk, offset);
 		case OP_SET_UPVALUE:  return byte_instruction("OP_SET_UPVALUE", chunk, offset);
 		case OP_GET_UPVALUE:  return byte_instruction("OP_GET_UPVALUE", chunk, offset);
+		case OP_SET_PROPERTY: return constant_instruction("OP_SET_PROPERTY", chunk, offset);
+		case OP_GET_PROPERTY: return constant_instruction("OP_GET_PROPERTY", chunk, offset);
 
 		case OP_NIL:   return simple_instruction("OP_NIL", offset);
 		case OP_FALSE: return simple_instruction("OP_FALSE", offset);
