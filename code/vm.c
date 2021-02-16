@@ -270,20 +270,6 @@ static Interpret_Result run(void) {
 				break;
 			}
 
-			case OP_SET_UPVALUE: {
-				uint8_t slot = READ_BYTE();
-				Obj_Closure * frame_closure = (Obj_Closure *)frame->function;
-				*frame_closure->upvalues[slot]->location = vm_stack_peek(0);
-				break;
-			}
-
-			case OP_GET_UPVALUE: {
-				uint8_t slot = READ_BYTE();
-				Obj_Closure * frame_closure = (Obj_Closure *)frame->function;
-				vm_stack_push(*frame_closure->upvalues[slot]->location);
-				break;
-			}
-
 			case OP_SET_GLOBAL: {
 				Obj_String * name = READ_CONSTANT_STRING();
 				if (table_set(&vm.globals, name, vm_stack_peek(0))) {
@@ -302,6 +288,20 @@ static Interpret_Result run(void) {
 					return INTERPRET_RUNTIME_ERROR;
 				}
 				vm_stack_push(value);
+				break;
+			}
+
+			case OP_SET_UPVALUE: {
+				uint8_t slot = READ_BYTE();
+				Obj_Closure * frame_closure = (Obj_Closure *)frame->function;
+				*frame_closure->upvalues[slot]->location = vm_stack_peek(0);
+				break;
+			}
+
+			case OP_GET_UPVALUE: {
+				uint8_t slot = READ_BYTE();
+				Obj_Closure * frame_closure = (Obj_Closure *)frame->function;
+				vm_stack_push(*frame_closure->upvalues[slot]->location);
 				break;
 			}
 
