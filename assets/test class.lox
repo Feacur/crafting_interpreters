@@ -1,5 +1,5 @@
 print("> classes");
-class lox_class { }
+class lox_class {}
 print(lox_class);
 print(lox_class());
 
@@ -10,3 +10,9 @@ var pair = Pair();
 pair.first = 1;
 pair.second = 2;
 print(pair.first + pair.second);
+
+print("> methods");
+class Brunch {
+	bacon() {}
+	eggs() {}
+}

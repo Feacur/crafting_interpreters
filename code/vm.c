@@ -212,6 +212,13 @@ typedef struct Obj_String Obj_String;
 typedef struct Obj_Class Obj_Class;
 typedef struct Obj_Instance Obj_Instance;
 
+static void define_method(Obj_String * name) {
+	Value method = vm_stack_peek(0);
+	Obj_Class * lox_class = AS_CLASS(vm_stack_peek(1));
+	table_set(&lox_class->methods, name, method);
+	vm_stack_pop();
+}
+
 static Interpret_Result run(void) {
 	Call_Frame * frame = &vm.frames[vm.frame_count - 1];
 
@@ -447,6 +454,12 @@ static Interpret_Result run(void) {
 				Obj_String * name = READ_CONSTANT_STRING();
 				Obj_Class * lox_class = new_class(name);
 				vm_stack_push(TO_OBJ(lox_class));
+				break;
+			}
+
+			case OP_METHOD: {
+				Obj_String * name = READ_CONSTANT_STRING();
+				define_method(name);
 				break;
 			}
 

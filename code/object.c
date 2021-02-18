@@ -190,6 +190,7 @@ Obj_Upvalue * new_upvalue(Value * slot) {
 Obj_Class * new_class(Obj_String * name) {
 	Obj_Class * lox_class = ALLOCATE_OBJ(Obj_Class, 0, OBJ_CLASS);
 	lox_class->name = name;
+	table_init(&lox_class->methods);
 	return lox_class;
 }
 
@@ -240,6 +241,7 @@ void gc_free_object(Obj * object) {
 
 		case OBJ_CLASS: {
 			Obj_Class * lox_class = (Obj_Class *)object;
+			table_free(&lox_class->methods);
 			FREE_OBJ(lox_class, 0);
 			break;
 		}
@@ -310,6 +312,7 @@ void gc_mark_object_black(Obj * object) {
 		case OBJ_CLASS: {
 			Obj_Class * lox_class = (Obj_Class *)object;
 			gc_mark_object_grey((Obj *)lox_class->name);
+			gc_mark_table_grey(&lox_class->methods);
 			break;
 		}
 

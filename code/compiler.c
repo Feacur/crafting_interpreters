@@ -622,21 +622,40 @@ static void do_fun_declaration(void) {
 	define_variable(global);
 }
 
+static void do_method(void) {
+	consume(TOKEN_IDENTIFIER, "expected a method name");
+	uint8_t name_constant = identifier_constant(&parser.previous);
+
+	Function_Type type = TYPE_FUNCTION;
+	do_function(type);
+
+	emit_bytes(OP_METHOD, name_constant);
+}
+
 static void do_class_declaration(void) {
 	consume(TOKEN_IDENTIFIER, "expected a class name");
+	Token class_name = parser.previous;
+
 	uint8_t name_constant = identifier_constant(&parser.previous);
 	declare_variable();
 
 	emit_bytes(OP_CLASS, name_constant);
 	define_variable(name_constant);
 
+	named_variable(class_name, false);
+
 	consume(TOKEN_LEFT_BRACE, "expected a '{'");
+	while (parser.current.type != TOKEN_RIGHT_BRACE && parser.current.type != TOKEN_EOF) {
+		do_method();
+	}
 	consume(TOKEN_RIGHT_BRACE, "expected a '}'");
+
+	emit_byte(OP_POP);
 }
 
 static void do_declaration(void);
 static void do_block(void) {
-	while (parser.current.type != TOKEN_EOF && parser.current.type != TOKEN_RIGHT_BRACE) {
+	while (parser.current.type != TOKEN_RIGHT_BRACE && parser.current.type != TOKEN_EOF) {
 		do_declaration();
 	}
 	consume(TOKEN_RIGHT_BRACE, "expected a '}");
