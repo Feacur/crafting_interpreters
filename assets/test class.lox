@@ -21,7 +21,19 @@ class Scone {
 var scone = Scone();
 scone.topping("berries", "cream");
 
-// print("> this");
+print("> this");
+class Nested {
+	method() {
+		fun function() {
+			print(this);
+		}
+
+		function();
+	}
+}
+Nested().method();
+
+// print("> this name");
 // class Person {
 // 	sayName() {
 // 		print(this.name);

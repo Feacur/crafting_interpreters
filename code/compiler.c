@@ -48,6 +48,7 @@ typedef struct {
 typedef enum {
 	TYPE_FUNCTION,
 	TYPE_SCRIPT,
+	TYPE_METHOD,
 } Function_Type;
 
 typedef struct {
@@ -67,8 +68,14 @@ typedef struct Compiler {
 	uint32_t scope_depth;
 } Compiler;
 
+typedef struct Class_Compiler {
+	struct Class_Compiler * enclosing;
+	Token name;
+} Class_Compiler;
+
 static Parser parser;
 static Compiler * current_compiler = NULL;
+static Class_Compiler * current_class = NULL;
 
 typedef struct Chunk Chunk;
 
@@ -227,8 +234,14 @@ static void compiler_init(Compiler * compiler, Function_Type type) {
 	Local * local = &compiler->locals[compiler->local_count++];
 	local->depth = 0;
 	local->is_captured = false;
-	local->name.start = "";
-	local->name.length = 0;
+	if (type == TYPE_METHOD) {
+		local->name.start = "this";
+		local->name.length = 4;
+	}
+	else {
+		local->name.start = "";
+		local->name.length = 0;
+	}
 }
 
 static Obj_Function * compiler_end(void) {
@@ -526,6 +539,15 @@ static void do_variable(bool can_assign) {
 	named_variable(parser.previous, can_assign);
 }
 
+static void do_this(bool can_assign) {
+	(void)can_assign;
+	if (current_class == NULL) {
+		error("can't use 'this' outside of a class");
+		return;
+	}
+	do_variable(false);
+}
+
 static void do_grouping(bool can_assign) {
 	(void)can_assign;
 	do_expression();
@@ -626,7 +648,7 @@ static void do_method(void) {
 	consume(TOKEN_IDENTIFIER, "expected a method name");
 	uint8_t name_constant = identifier_constant(&parser.previous);
 
-	Function_Type type = TYPE_FUNCTION;
+	Function_Type type = TYPE_METHOD;
 	do_function(type);
 
 	emit_bytes(OP_METHOD, name_constant);
@@ -642,6 +664,11 @@ static void do_class_declaration(void) {
 	emit_bytes(OP_CLASS, name_constant);
 	define_variable(name_constant);
 
+	Class_Compiler class_compiler;
+	class_compiler.enclosing = current_class;
+	class_compiler.name = class_name;
+	current_class = &class_compiler;
+
 	named_variable(class_name, false);
 
 	consume(TOKEN_LEFT_BRACE, "expected a '{'");
@@ -651,6 +678,8 @@ static void do_class_declaration(void) {
 	consume(TOKEN_RIGHT_BRACE, "expected a '}'");
 
 	emit_byte(OP_POP);
+
+	current_class = current_class->enclosing;
 }
 
 static void do_declaration(void);
@@ -865,7 +894,7 @@ static Parse_Rule rules[] = {
 	// [TOKEN_PRINT]         = {NULL,        NULL,      PREC_NONE},
 	// [TOKEN_RETURN]        = {NULL,        NULL,      PREC_NONE},
 	// [TOKEN_SUPER]         = {NULL,        NULL,      PREC_NONE},
-	// [TOKEN_THIS]          = {NULL,        NULL,      PREC_NONE},
+	[TOKEN_THIS]          = {do_this,     NULL,      PREC_NONE},
 	[TOKEN_TRUE]          = {do_literal,  NULL,      PREC_NONE},
 	// [TOKEN_VAR]           = {NULL,        NULL,      PREC_NONE},
 	// [TOKEN_WHILE]         = {NULL,        NULL,      PREC_NONE},

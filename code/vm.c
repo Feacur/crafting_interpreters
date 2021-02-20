@@ -147,14 +147,8 @@ inline static bool call_closure(Obj_Closure * closure, uint8_t arg_count) {
 }
 
 inline static bool call_bound(Obj_Bound_Method * bound, uint8_t arg_count) {
-	switch (bound->method->type) {
-		case OBJ_FUNCTION:
-			return call_function((Obj_Function *)bound->method, arg_count);
-		default:
-		// case OBJ_CLOSURE:
-			return call_closure((Obj_Closure *)bound->method, arg_count);
-	}
-	// return false;
+	vm_stack_set(arg_count, bound->receiver);
+	return call((Obj *)bound->method, bound->method, arg_count);
 }
 
 typedef struct Obj_Class Obj_Class;
@@ -237,7 +231,7 @@ static bool bind_method(Obj_Class * lox_class, Obj_String * name) {
 	Value method;
 	if (!table_get(&lox_class->methods, name, &method)) { return false; }
 
-	Obj_Bound_Method * bound = new_bound_method(vm_stack_peek(0), AS_OBJ(method));
+	Obj_Bound_Method * bound = new_bound_method(vm_stack_peek(0), AS_FUNCTION(method));
 	vm_stack_pop();
 	vm_stack_push(TO_OBJ(bound));
 
@@ -531,6 +525,10 @@ Value vm_stack_pop(void) {
 
 Value vm_stack_peek(uint32_t distance) {
 	return vm.stack_top[-(int32_t)(distance + 1)];
+}
+
+void vm_stack_set(uint32_t distance, Value value) {
+	vm.stack_top[-(int32_t)(distance + 1)] = value;
 }
 
 Interpret_Result vm_interpret(char const * source) {

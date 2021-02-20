@@ -71,7 +71,7 @@ struct Obj_Instance {
 struct Obj_Bound_Method {
 	struct Obj obj;
 	Value receiver;
-	struct Obj * method;
+	struct Obj_Function * method;
 };
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
@@ -109,7 +109,7 @@ struct Obj_Closure * new_closure(struct Obj_Function * function);
 struct Obj_Upvalue * new_upvalue(Value * slot);
 struct Obj_Class * new_class(struct Obj_String * name);
 struct Obj_Instance * new_instance(struct Obj_Class * lox_class);
-struct Obj_Bound_Method * new_bound_method(Value receiver, struct Obj * method);
+struct Obj_Bound_Method * new_bound_method(Value receiver, struct Obj_Function * method);
 
 void gc_free_object(struct Obj * object);
 

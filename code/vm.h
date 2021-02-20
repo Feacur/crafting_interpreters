@@ -49,6 +49,7 @@ Interpret_Result vm_interpret(char const * source);
 void vm_stack_push(Value value);
 Value vm_stack_pop(void);
 Value vm_stack_peek(uint32_t distance);
+void vm_stack_set(uint32_t distance, Value value);
 
 struct Obj_Native;
 

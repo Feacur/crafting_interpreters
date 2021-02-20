@@ -211,7 +211,7 @@ Obj_Instance * new_instance(Obj_Class * lox_class) {
 	return instance;
 }
 
-Obj_Bound_Method * new_bound_method(Value receiver, struct Obj * method) {
+Obj_Bound_Method * new_bound_method(Value receiver, struct Obj_Function * method) {
 	Obj_Bound_Method * bound = ALLOCATE_OBJ(Obj_Bound_Method, 0, OBJ_BOUND_METHOD);
 	bound->receiver = receiver;
 	bound->method = method;
