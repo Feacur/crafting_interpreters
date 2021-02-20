@@ -399,9 +399,9 @@ static Interpret_Result run(void) {
 					Obj_String * b = AS_STRING(vm_stack_peek(0));
 					Obj_String * a = AS_STRING(vm_stack_peek(1));
 					Obj_String * string = strings_concatenate(a, b);
+					vm_stack_pop();
+					vm_stack_pop();
 					vm_stack_push(TO_OBJ(string));
-					vm_stack_pop();
-					vm_stack_pop();
 				}
 				else {
 					OP_BINARY(TO_NUMBER, +);
