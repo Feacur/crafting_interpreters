@@ -78,6 +78,7 @@ typedef struct Obj_Closure Obj_Closure;
 typedef struct Obj_Upvalue Obj_Upvalue;
 typedef struct Obj_Class Obj_Class;
 typedef struct Obj_Instance Obj_Instance;
+typedef struct Obj_Bound_Method Obj_Bound_Method;
 
 void print_object(Obj * object) {
 	switch (object->type) {
@@ -106,6 +107,7 @@ void print_object(Obj * object) {
 		case OBJ_CLOSURE: {
 			Obj_Closure * closure = (Obj_Closure *)object;
 			print_object((Obj *)closure->function);
+			printf(" closure");
 			break;
 		}
 
@@ -124,7 +126,15 @@ void print_object(Obj * object) {
 
 		case OBJ_INSTANCE: {
 			Obj_Instance * instance = (Obj_Instance *)object;
-			printf("%s instance", instance->lox_class->name->chars);
+			print_object((Obj *)instance->lox_class);
+			printf(" instance");
+			break;
+		}
+
+		case OBJ_BOUND_METHOD: {
+			Obj_Bound_Method * bound = (Obj_Bound_Method *)object;
+			print_object((Obj *)bound->method);
+			printf(" bound");
 			break;
 		}
 	}
@@ -201,6 +211,14 @@ Obj_Instance * new_instance(Obj_Class * lox_class) {
 	return instance;
 }
 
+Obj_Bound_Method * new_bound_method(Value receiver, struct Obj * method) {
+	Obj_Bound_Method * bound = ALLOCATE_OBJ(Obj_Bound_Method, 0, OBJ_BOUND_METHOD);
+	bound->receiver = receiver;
+	bound->method = method;
+	return bound;
+
+}
+
 void gc_free_object(Obj * object) {
 #if defined(DEBUG_TRACE_GC)
 	printf("%p free, type %d\n", (void *)object, object->type);
@@ -250,6 +268,12 @@ void gc_free_object(Obj * object) {
 			Obj_Instance * instance = (Obj_Instance *)object;
 			table_free(&instance->table);
 			FREE_OBJ(instance, 0);
+			break;
+		}
+
+		case OBJ_BOUND_METHOD: {
+			Obj_Bound_Method * bound = (Obj_Bound_Method *)object;
+			FREE_OBJ(bound, 0);
 			break;
 		}
 	}
@@ -320,6 +344,13 @@ void gc_mark_object_black(Obj * object) {
 			Obj_Instance * instance = (Obj_Instance *)object;
 			gc_mark_object_grey((Obj *)instance->lox_class);
 			gc_mark_table_grey(&instance->table);
+			break;
+		}
+
+		case OBJ_BOUND_METHOD: {
+			Obj_Bound_Method * bound = (Obj_Bound_Method *)object;
+			gc_mark_value_grey(bound->receiver);
+			gc_mark_object_grey((Obj *)bound->method);
 			break;
 		}
 	}

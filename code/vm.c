@@ -23,6 +23,7 @@ static void stack_reset(void) {
 
 typedef struct Obj_Function Obj_Function;
 typedef struct Obj_Closure Obj_Closure;
+typedef struct Obj_Bound_Method Obj_Bound_Method;
 
 inline static Obj_Function * get_frame_function(Call_Frame * frame) {
 	switch (frame->function->type) {
@@ -145,6 +146,17 @@ inline static bool call_closure(Obj_Closure * closure, uint8_t arg_count) {
 	return call((Obj *)closure, closure->function, arg_count);
 }
 
+inline static bool call_bound(Obj_Bound_Method * bound, uint8_t arg_count) {
+	switch (bound->method->type) {
+		case OBJ_FUNCTION:
+			return call_function((Obj_Function *)bound->method, arg_count);
+		default:
+		// case OBJ_CLOSURE:
+			return call_closure((Obj_Closure *)bound->method, arg_count);
+	}
+	// return false;
+}
+
 typedef struct Obj_Class Obj_Class;
 
 static bool call_class(Obj_Class * class, uint8_t arg_count) {
@@ -163,6 +175,8 @@ static bool call_value(Value callee, uint8_t arg_count) {
 				return call_closure(AS_CLOSURE(callee), arg_count);
 			case OBJ_CLASS:
 				return call_class(AS_CLASS(callee), arg_count);
+			case OBJ_BOUND_METHOD:
+				return call_bound(AS_BOUND_METHOD(callee), arg_count);
 			default: break;
 		}
 	}
@@ -217,6 +231,17 @@ static void define_method(Obj_String * name) {
 	Obj_Class * lox_class = AS_CLASS(vm_stack_peek(1));
 	table_set(&lox_class->methods, name, method);
 	vm_stack_pop();
+}
+
+static bool bind_method(Obj_Class * lox_class, Obj_String * name) {
+	Value method;
+	if (!table_get(&lox_class->methods, name, &method)) { return false; }
+
+	Obj_Bound_Method * bound = new_bound_method(vm_stack_peek(0), AS_OBJ(method));
+	vm_stack_pop();
+	vm_stack_push(TO_OBJ(bound));
+
+	return true;
 }
 
 static Interpret_Result run(void) {
@@ -341,6 +366,7 @@ static Interpret_Result run(void) {
 
 				Value value;
 				if (!table_get(&instance->table, name, &value)) {
+					if (bind_method(instance->lox_class, name)) { break; }
 					runtime_error("undefined property '%s'", name->chars);
 					return INTERPRET_RUNTIME_ERROR;
 				}

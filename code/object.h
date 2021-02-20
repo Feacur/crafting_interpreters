@@ -12,6 +12,7 @@ typedef enum {
 	OBJ_UPVALUE,
 	OBJ_CLASS,
 	OBJ_INSTANCE,
+	OBJ_BOUND_METHOD,
 } Obj_Type;
 
 struct Obj {
@@ -67,6 +68,12 @@ struct Obj_Instance {
 	Table table;
 };
 
+struct Obj_Bound_Method {
+	struct Obj obj;
+	Value receiver;
+	struct Obj * method;
+};
+
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
 #define IS_STRING(value) is_obj_type(value, OBJ_STRING)
@@ -76,6 +83,7 @@ struct Obj_Instance {
 #define IS_UPVALUE(value) is_obj_type(value, OBJ_UPVALUE)
 #define IS_CLASS(value) is_obj_type(value, OBJ_CLASS)
 #define IS_INSTANCE(value) is_obj_type(value, OBJ_INSTANCE)
+#define IS_BOUND_METHOD(value) is_obj_type(value, OBJ_BOUND_METHOD)
 
 #define AS_STRING(value) ((struct Obj_String *)(void *)AS_OBJ(value))
 #define AS_FUNCTION(value) ((struct Obj_Function *)(void *)AS_OBJ(value))
@@ -84,6 +92,7 @@ struct Obj_Instance {
 #define AS_UPVALUE(value) ((struct Obj_Upvalue *)(void *)AS_OBJ(value))
 #define AS_CLASS(value) ((struct Obj_Class *)(void *)AS_OBJ(value))
 #define AS_INSTANCE(value) ((struct Obj_Instance *)(void *)AS_OBJ(value))
+#define AS_BOUND_METHOD(value) ((struct Obj_Bound_Method *)(void *)AS_OBJ(value))
 
 struct Obj_String * copy_string(char const * chars, uint32_t length);
 
@@ -100,6 +109,7 @@ struct Obj_Closure * new_closure(struct Obj_Function * function);
 struct Obj_Upvalue * new_upvalue(Value * slot);
 struct Obj_Class * new_class(struct Obj_String * name);
 struct Obj_Instance * new_instance(struct Obj_Class * lox_class);
+struct Obj_Bound_Method * new_bound_method(Value receiver, struct Obj * method);
 
 void gc_free_object(struct Obj * object);
 
