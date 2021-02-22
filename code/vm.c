@@ -202,7 +202,7 @@ inline static bool invoke_from_class(Obj_Class * lox_class, Obj_String * name, u
 		runtime_error("class '%s' doesn't have method '%s'", lox_class->name->chars, name->chars);
 		return false;
 	}
-	return call_function(AS_FUNCTION(method), arg_count);
+	return call_value(method, arg_count);
 }
 
 typedef struct Obj_Instance Obj_Instance;
