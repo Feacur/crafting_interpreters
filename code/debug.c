@@ -21,6 +21,15 @@ static uint32_t constant_instruction(char const * name, Chunk * chunk, uint32_t 
 	return offset + 2;
 }
 
+static uint32_t invoke_instruction(char const * name, Chunk * chunk, uint32_t offset) {
+	uint8_t constant = chunk->code[offset + 1];
+	uint8_t arg_count = chunk->code[offset + 2];
+	printf("%-16s (%d args) %4d '", name, arg_count, constant);
+	value_print(chunk->constants.values[constant]);
+	printf("'\n");
+	return offset + 3;
+}
+
 static uint32_t byte_instruction(char const * name, Chunk * chunk, uint32_t offset) {
 	uint8_t slot = chunk->code[offset + 1];
 	printf("%-16s %4d\n", name, slot);
@@ -105,6 +114,7 @@ uint32_t chunk_disassemble_instruction(Chunk * chunk, uint32_t offset) {
 		}
 		case OP_CLASS: return constant_instruction("OP_CLASS", chunk, offset);
 		case OP_METHOD: return constant_instruction("OP_METHOD", chunk, offset);
+		case OP_INVOKE: return invoke_instruction("OP_INVOKE", chunk, offset);
 
 		case OP_CALL: return byte_instruction("OP_CALL", chunk, offset);
 		case OP_RETURN: return simple_instruction("OP_RETURN", offset);

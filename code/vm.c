@@ -194,6 +194,36 @@ static bool call_value(Value callee, uint8_t arg_count) {
 	return false;
 }
 
+typedef struct Obj_String Obj_String;
+
+inline static bool invoke_from_class(Obj_Class * lox_class, Obj_String * name, uint8_t arg_count) {
+	Value method;
+	if (!table_get(&lox_class->methods, name, &method)) {
+		runtime_error("class '%s' doesn't have method '%s'", lox_class->name->chars, name->chars);
+		return false;
+	}
+	return call_function(AS_FUNCTION(method), arg_count);
+}
+
+typedef struct Obj_Instance Obj_Instance;
+
+inline static bool invoke(Obj_String * name, uint8_t arg_count) {
+	Value receiver = vm_stack_peek(arg_count);
+	if (!IS_INSTANCE(receiver)) {
+		runtime_error("only instances have methods");
+		return false;
+	}
+	Obj_Instance * instance = AS_INSTANCE(receiver);
+
+	Value value;
+	if (table_get(&instance->table, name, &value)) {
+		vm_stack_set(arg_count, value);
+		return call_value(value, arg_count);
+	}
+
+	return invoke_from_class(instance->lox_class, name, arg_count);
+}
+
 typedef struct Obj_Upvalue Obj_Upvalue;
 
 static Obj_Upvalue * capture_upvalue(Value * local) {
@@ -231,10 +261,6 @@ static void close_upvalues(Value * last) {
 	}
 }
 
-typedef struct Obj_String Obj_String;
-typedef struct Obj_Class Obj_Class;
-typedef struct Obj_Instance Obj_Instance;
-
 static void define_method(Obj_String * name) {
 	Value method = vm_stack_peek(0);
 	Obj_Class * lox_class = AS_CLASS(vm_stack_peek(1));
@@ -244,7 +270,10 @@ static void define_method(Obj_String * name) {
 
 static bool bind_method(Obj_Class * lox_class, Obj_String * name) {
 	Value method;
-	if (!table_get(&lox_class->methods, name, &method)) { return false; }
+	if (!table_get(&lox_class->methods, name, &method)) {
+		runtime_error("class '%s' doesn't have method '%s'", lox_class->name->chars, name->chars);
+		return false;
+	}
 
 	Obj_Bound_Method * bound = new_bound_method(vm_stack_peek(0), AS_FUNCTION(method));
 	vm_stack_pop();
@@ -374,15 +403,16 @@ static Interpret_Result run(void) {
 				Obj_String * name = READ_CONSTANT_STRING();
 
 				Value value;
-				if (!table_get(&instance->table, name, &value)) {
-					if (bind_method(instance->lox_class, name)) { break; }
-					runtime_error("undefined property '%s'", name->chars);
-					return INTERPRET_RUNTIME_ERROR;
+				if (table_get(&instance->table, name, &value)) {
+					vm_stack_pop();
+					vm_stack_push(value);
+					break;
 				}
 
-				vm_stack_pop();
-				vm_stack_push(value);
-				break;
+				if (bind_method(instance->lox_class, name)) { break; }
+
+				runtime_error("undefined property '%s'", name->chars);
+				return INTERPRET_RUNTIME_ERROR;
 			}
 
 			case OP_DEFINE_GLOBAL: {
@@ -495,6 +525,16 @@ static Interpret_Result run(void) {
 			case OP_METHOD: {
 				Obj_String * name = READ_CONSTANT_STRING();
 				define_method(name);
+				break;
+			}
+
+			case OP_INVOKE: {
+				Obj_String * name = READ_CONSTANT_STRING();
+				uint8_t arg_count = READ_BYTE();
+				if (!invoke(name, arg_count)) {
+					return INTERPRET_RUNTIME_ERROR;
+				}
+				frame = &vm.frames[vm.frame_count - 1];
 				break;
 			}
 

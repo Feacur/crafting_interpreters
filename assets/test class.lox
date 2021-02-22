@@ -49,3 +49,24 @@ class CoffeeMaker {
 
 var maker = CoffeeMaker("coffee and chicory");
 maker.brew();
+
+print("> oops");
+class Oops {
+	init() {
+		this.name = "oops";
+		var up = "local";
+		fun f() {
+			print("a closure inside " + this.name + " ; a local == " + up);
+		}
+		this.field = f;
+
+		fun f2() {
+			print("a function");
+		}
+		this.field2 = f2;
+	}
+}
+
+var oops = Oops();
+oops.field();
+oops.field2();
