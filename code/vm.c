@@ -560,6 +560,17 @@ static Interpret_Result run(void) {
 				break;
 			}
 
+			case OP_SUPER_INVOKE: {
+				Obj_String * name = READ_CONSTANT_STRING();
+				uint8_t arg_count = READ_BYTE();
+				Obj_Class * superclass = AS_CLASS(vm_stack_pop());
+				if (!invoke_from_class(superclass, name, arg_count)) {
+					return INTERPRET_RUNTIME_ERROR;
+				}
+				frame = &vm.frames[vm.frame_count - 1];
+				break;
+			}
+
 			case OP_RETURN: {
 				Value result = vm_stack_pop();
 
