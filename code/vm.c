@@ -157,12 +157,13 @@ inline static bool call_bound(Obj_Bound_Method * bound, uint8_t arg_count) {
 
 typedef struct Obj_Class Obj_Class;
 
+static bool call_value(Value callee, uint8_t arg_count);
 static bool call_class(Obj_Class * lox_class, uint8_t arg_count) {
 	vm_stack_set(arg_count, TO_OBJ(new_instance(lox_class)));
 
 	Value initializer;
 	if (table_get(&lox_class->methods, vm.init_string, &initializer)) {
-		return call_function(AS_FUNCTION(initializer), arg_count);
+		return call_value(initializer, arg_count);
 	}
 
 	if (arg_count > 0) {

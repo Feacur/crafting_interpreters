@@ -1,11 +1,18 @@
 print("> inheritance");
 class Doughnut {
+	init() {
+		print("init as Doughnut.");
+	}
 	cook() {
 		print("Dunk in the fryer.");
 	}
 }
 
 class Cruller < Doughnut {
+	init() {
+		super.init();
+		print("init as Cruller.");
+	}
 	cook() {
 		super.cook();
 		print("... half a minute longer");
