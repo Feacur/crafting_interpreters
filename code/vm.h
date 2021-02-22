@@ -21,6 +21,7 @@ struct VM {
 	Value * stack_top;
 	Table globals;
 	Table strings;
+	struct Obj_String * init_string;
 	struct Obj_Upvalue * open_upvalues;
 	struct Obj * objects;
 

@@ -53,6 +53,7 @@ static void gc_mark_roots_grey(void) {
 
 	// `vm.strings` is a weak-references root
 	gc_mark_table_grey(&vm.globals);
+	gc_mark_object_grey((Obj *)vm.init_string);
 }
 
 static void gc_grey_to_black(void) {

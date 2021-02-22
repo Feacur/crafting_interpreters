@@ -49,6 +49,7 @@ typedef enum {
 	TYPE_FUNCTION,
 	TYPE_SCRIPT,
 	TYPE_METHOD,
+	TYPE_INITIALIZER,
 } Function_Type;
 
 typedef struct {
@@ -163,7 +164,12 @@ static bool compiler_match(Token_Type type) {
 
 static bool identifiers_equal(Token * a, Token * b) {
 	if (a->length != b->length) { return false; }
-	return memcmp(a->start, b->start, sizeof(char) * a->length) == 0;
+	return memcmp(a->start, b->start, sizeof(char) * b->length) == 0;
+}
+
+static bool identifier_is(Token * a, char const * chars, uint32_t length) {
+	if (a->length != length) { return false; }
+	return memcmp(a->start, chars, sizeof(char) * length) == 0;
 }
 
 // emitting
@@ -215,6 +221,16 @@ static void emit_loop(uint32_t target) {
 	emit_byte(loop & 0xff);
 }
 
+static void emit_default_return(void) {
+	if (current_compiler->type == TYPE_INITIALIZER) {
+		emit_bytes(OP_GET_LOCAL, 0); // this
+	}
+	else {
+		emit_byte(OP_NIL);
+	}
+	emit_byte(OP_RETURN);
+}
+
 static void compiler_init(Compiler * compiler, Function_Type type) {
 	compiler->enclosing = current_compiler;
 	compiler->type = type;
@@ -234,7 +250,7 @@ static void compiler_init(Compiler * compiler, Function_Type type) {
 	Local * local = &compiler->locals[compiler->local_count++];
 	local->depth = 0;
 	local->is_captured = false;
-	if (type == TYPE_METHOD) {
+	if (type == TYPE_METHOD || type == TYPE_INITIALIZER) {
 		local->name.start = "this";
 		local->name.length = 4;
 	}
@@ -245,7 +261,7 @@ static void compiler_init(Compiler * compiler, Function_Type type) {
 }
 
 static Obj_Function * compiler_end(void) {
-	emit_bytes(OP_NIL, OP_RETURN);
+	emit_default_return();
 
 	Obj_Function * function = current_compiler->function;
 
@@ -649,6 +665,9 @@ static void do_method(void) {
 	uint8_t name_constant = identifier_constant(&parser.previous);
 
 	Function_Type type = TYPE_METHOD;
+	if (identifier_is(&parser.previous, "init", 4)) {
+		type = TYPE_INITIALIZER;
+	}
 	do_function(type);
 
 	emit_bytes(OP_METHOD, name_constant);
@@ -785,9 +804,12 @@ static void do_return_statement(void) {
 	}
 
 	if (compiler_match(TOKEN_SEMICOLON)) {
-		emit_bytes(OP_NIL, OP_RETURN);
+		emit_default_return();
 	}
 	else {
+		if (current_compiler->type == TYPE_INITIALIZER) {
+			error("can't return values from an initializer");
+		}
 		do_expression();
 		consume(TOKEN_SEMICOLON, "expected a ';'");
 		emit_byte(OP_RETURN);
