@@ -100,11 +100,11 @@ bool table_delete(Table * table, Obj_String * key) {
 	return true;
 }
 
-void table_add_all(Table * table, Table * to) {
-	for (uint32_t i = 0; i < table->capacity; i++) {
-		Entry * entry = &table->entries[i];
+void table_add_all(Table * table, Table * from) {
+	for (uint32_t i = 0; i < from->capacity; i++) {
+		Entry * entry = &from->entries[i];
 		if (entry->key == NULL) { continue; }
-		table_set(to, entry->key, entry->value);
+		table_set(table, entry->key, entry->value);
 	}
 }
 
