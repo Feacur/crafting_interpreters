@@ -538,6 +538,27 @@ static Interpret_Result run(void) {
 				break;
 			}
 
+			case OP_INHERIT: {
+				Value superclass = vm_stack_peek(1);
+				if (!IS_CLASS(superclass)) {
+					runtime_error("superclass must be a class");
+					return INTERPRET_RUNTIME_ERROR;
+				}
+				Obj_Class * subclass = AS_CLASS(vm_stack_peek(0));
+				table_add_all(&subclass->methods, &AS_CLASS(superclass)->methods);
+				vm_stack_pop();
+				break;
+			}
+
+			case OP_GET_SUPER: {
+				Obj_String * name = READ_CONSTANT_STRING();
+				Obj_Class * superclass = AS_CLASS(vm_stack_pop());
+				if (!bind_method(superclass, name)) {
+					return INTERPRET_RUNTIME_ERROR;
+				}
+				break;
+			}
+
 			case OP_RETURN: {
 				Value result = vm_stack_pop();
 

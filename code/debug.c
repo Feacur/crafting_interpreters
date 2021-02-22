@@ -116,6 +116,9 @@ uint32_t chunk_disassemble_instruction(Chunk * chunk, uint32_t offset) {
 		case OP_METHOD: return constant_instruction("OP_METHOD", chunk, offset);
 		case OP_INVOKE: return invoke_instruction("OP_INVOKE", chunk, offset);
 
+		case OP_INHERIT: return simple_instruction("OP_INHERIT", offset);
+		case OP_GET_SUPER: return constant_instruction("OP_GET_SUPER", chunk, offset);
+
 		case OP_CALL: return byte_instruction("OP_CALL", chunk, offset);
 		case OP_RETURN: return simple_instruction("OP_RETURN", offset);
 	}

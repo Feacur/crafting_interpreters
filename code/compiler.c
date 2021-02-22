@@ -72,6 +72,7 @@ typedef struct Compiler {
 typedef struct Class_Compiler {
 	struct Class_Compiler * enclosing;
 	Token name;
+	bool has_superclass;
 } Class_Compiler;
 
 static Parser parser;
@@ -279,7 +280,6 @@ static Obj_Function * compiler_end(void) {
 // parsing
 static Parse_Rule * get_rule(Token_Type type);
 static void parse_presedence(Precedence precedence) {
-	(void)precedence;
 	compiler_advance();
 	Parse_Fn * prefix_rule = get_rule(parser.previous.type)->prefix;
 	if (prefix_rule == NULL) {
@@ -555,6 +555,13 @@ static void do_variable(bool can_assign) {
 	named_variable(parser.previous, can_assign);
 }
 
+static Token synthetic_token(char const * text) {
+	Token token;
+	token.start = text;
+	token.length = (uint32_t)strlen(text);
+	return token;
+}
+
 static void do_this(bool can_assign) {
 	(void)can_assign;
 	if (current_class == NULL) {
@@ -562,6 +569,24 @@ static void do_this(bool can_assign) {
 		return;
 	}
 	do_variable(false);
+}
+
+static void do_super(bool can_assign) {
+	(void)can_assign;
+	if (current_compiler == NULL) {
+		error("can use 'super' only in methods");
+	}
+	else if (!current_class->has_superclass) {
+		error("can use 'super' only on subclass methods");
+	}
+
+	consume(TOKEN_DOT, "expected a '.'");
+	consume(TOKEN_IDENTIFIER, "expected an identifier");
+	uint8_t name = identifier_constant(&parser.previous);
+
+	named_variable(synthetic_token("this"), false);
+	named_variable(synthetic_token("super"), false);
+	emit_bytes(OP_GET_SUPER, name);
 }
 
 static void do_grouping(bool can_assign) {
@@ -578,6 +603,7 @@ static void do_call(bool can_assign) {
 
 static void do_dot(bool can_assign) {
 	consume(TOKEN_IDENTIFIER, "expected an identifier");
+	Token asd = parser.previous; (void)asd;
 	uint8_t name = identifier_constant(&parser.previous);
 
 	if (can_assign && compiler_match(TOKEN_EQUAL)) {
@@ -691,7 +717,25 @@ static void do_class_declaration(void) {
 	Class_Compiler class_compiler;
 	class_compiler.enclosing = current_class;
 	class_compiler.name = class_name;
+	class_compiler.has_superclass = false;
 	current_class = &class_compiler;
+
+	if (compiler_match(TOKEN_LESS)) {
+		consume(TOKEN_IDENTIFIER, "expected a superclass name");
+		do_variable(false);
+		if (identifiers_equal(&class_name, &parser.previous)) {
+			error("a class can't inherit from itself");
+		}
+
+		begin_scope();
+		add_local(synthetic_token("super"));
+		define_variable(0);
+
+		named_variable(class_name, false);
+		emit_byte(OP_INHERIT);
+
+		class_compiler.has_superclass = true;
+	}
 
 	named_variable(class_name, false);
 
@@ -702,6 +746,10 @@ static void do_class_declaration(void) {
 	consume(TOKEN_RIGHT_BRACE, "expected a '}'");
 
 	emit_byte(OP_POP);
+
+	if (current_class->has_superclass) {
+		end_scope();
+	}
 
 	current_class = current_class->enclosing;
 }
@@ -920,7 +968,7 @@ static Parse_Rule rules[] = {
 	[TOKEN_OR]            = {NULL,        do_or,     PREC_OR},
 	// [TOKEN_PRINT]         = {NULL,        NULL,      PREC_NONE},
 	// [TOKEN_RETURN]        = {NULL,        NULL,      PREC_NONE},
-	// [TOKEN_SUPER]         = {NULL,        NULL,      PREC_NONE},
+	[TOKEN_SUPER]         = {do_super,    NULL,      PREC_NONE},
 	[TOKEN_THIS]          = {do_this,     NULL,      PREC_NONE},
 	[TOKEN_TRUE]          = {do_literal,  NULL,      PREC_NONE},
 	// [TOKEN_VAR]           = {NULL,        NULL,      PREC_NONE},

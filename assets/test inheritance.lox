@@ -1,0 +1,20 @@
+print("> inheritance");
+class Doughnut {
+	cook() {
+		print("Dunk in the fryer.");
+	}
+}
+
+class Cruller < Doughnut {
+	cook() {
+		super.cook();
+		print("... half a minute longer");
+	}
+	finish() {
+		print("Glaze with icing");
+	}
+}
+
+var cruller = Cruller();
+cruller.cook();
+cruller.finish();
