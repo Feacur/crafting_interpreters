@@ -57,7 +57,7 @@ static uint32_t hash_string(char const * chars, uint32_t length) {
 
 Obj_String * copy_string(char const * chars, uint32_t length) {
 	uint32_t hash = hash_string(chars, length);
-	Obj_String * interned = table_find_key(&vm.strings, chars, length, hash);
+	Obj_String * interned = table_find_key_copy(&vm.strings, chars, length, hash);
 	if (interned != NULL) { return interned; }
 
 	Obj_String * string = allocate_string(length);
@@ -143,7 +143,7 @@ void print_object(Obj * object) {
 Obj_String * strings_concatenate(Obj_String * a_string, Obj_String * b_string) {
 	uint32_t hash = hash_string_2(a_string->hash, b_string->chars, b_string->length);
 	uint32_t length = a_string->length + b_string->length;
-	Obj_String * interned = table_find_key_2(&vm.strings, a_string->chars, a_string->length, b_string->chars, b_string->length, hash);
+	Obj_String * interned = table_find_key_concatenate(&vm.strings, a_string->chars, a_string->length, b_string->chars, b_string->length, hash);
 	if (interned != NULL) { return interned; }
 
 	Obj_String * string = allocate_string(length);

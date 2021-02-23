@@ -112,7 +112,8 @@ void table_add_all(Table * table, Table * from) {
 	}
 }
 
-struct Obj_String * table_find_key(Table * table, char const * chars, uint32_t length, uint32_t hash) {
+struct Obj_String * table_find_key_copy(Table * table, char const * chars, uint32_t length, uint32_t hash) {
+	// currently, it's compile-time and initialization-time function
 	if (table->count == 0) { return false; }
 
 	uint32_t index = hash % table->capacity;
@@ -130,7 +131,7 @@ struct Obj_String * table_find_key(Table * table, char const * chars, uint32_t l
 	return NULL;
 }
 
-struct Obj_String * table_find_key_2(Table * table, char const * a_chars, uint32_t a_length, char const * b_chars, uint32_t b_length, uint32_t hash) {
+struct Obj_String * table_find_key_concatenate(Table * table, char const * a_chars, uint32_t a_length, char const * b_chars, uint32_t b_length, uint32_t hash) {
 	if (table->count == 0) { return false; }
 
 	uint32_t length = a_length + b_length;
