@@ -793,7 +793,6 @@ static void do_while_statement(void) {
 	consume(TOKEN_LEFT_PAREN, "expected a '('");
 
 	uint32_t loop_start = current_chunk()->count;
-	printf("jump to %d\n", (uint32_t)(current_chunk()->count));
 	do_expression();
 
 	consume(TOKEN_RIGHT_PAREN, "expected a ')'");
@@ -802,9 +801,7 @@ static void do_while_statement(void) {
 	emit_byte(OP_POP);
 
 	do_statement();
-	printf("jump from1 %d\n", (uint32_t)(current_chunk()->count));
 	emit_loop(loop_start);
-	printf("jump from2 %d\n", (uint32_t)(current_chunk()->count));
 
 	patch_jump(exit_jump);
 	emit_byte(OP_POP);
