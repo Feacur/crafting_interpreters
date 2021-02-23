@@ -10,6 +10,13 @@
 // #define DEBUG_TRACE_GC
 // #define DEBUG_TRACE_EXECUTION
 
+#define NAN_BOXING
+#define NAN_MASK ((uint64_t)0x7ffc000000000000)
+#define NAN_SIGN ((uint64_t)0x8000000000000000)
+#define NAN_TAG_NIL   1
+#define NAN_TAG_FALSE 2
+#define NAN_TAG_TRUE  3
+
 #define FRAMES_MAX 64
 #define LOCALS_MAX (UINT8_MAX + 1)
 #define STACK_MAX (FRAMES_MAX * LOCALS_MAX)

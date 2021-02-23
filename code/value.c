@@ -3,8 +3,20 @@
 #include "object.h"
 #include "memory.h"
 
+inline static Value_Type value_type(Value value) {
+#if defined(NAN_BOXING)
+	if (IS_NIL(value)) { return VAL_NIL; }
+	if (IS_NUMBER(value)) { return VAL_NUMBER; }
+	if (IS_BOOL(value)) { return VAL_BOOL; }
+	if (IS_OBJ(value)) { return VAL_OBJ; }
+	return VAL_NIL;
+#else
+	return value.type;
+#endif // NAN_BOXING
+}
+
 void value_print(Value value) {
-	switch (value.type) {
+	switch (value_type(value)) {
 		case VAL_NIL:    printf("nil"); break;
 		case VAL_NUMBER: printf("%g", AS_NUMBER(value)); break;
 		case VAL_BOOL:   printf(AS_BOOL(value) ? "true" : "false"); break;
@@ -15,14 +27,22 @@ void value_print(Value value) {
 typedef struct Obj Obj;
 
 bool values_equal(Value a, Value b) {
-	if (a.type != b.type) { return false; }
-	switch (a.type) {
+#if defined(NAN_BOXING)
+	// C# version disregards this; also it is not useful anyway
+	// if (IS_NUMBER(a) && IS_NUMBER(b)) {
+	// 	return AS_NUMBER(a) == AS_NUMBER(b);
+	// }
+	return a == b;
+#else
+	if (value_type(a) != value_type(b)) { return false; }
+	switch (value_type(a)) {
 		case VAL_NIL:    return true;
 		case VAL_NUMBER: return AS_NUMBER(a) == AS_NUMBER(b);
 		case VAL_BOOL:   return AS_BOOL(a) == AS_BOOL(b);
 		case VAL_OBJ:    return AS_OBJ(a) == AS_OBJ(b);
 	}
 	return false; // unreachable
+#endif // NAN_BOXING
 }
 
 void value_array_init(Value_Array * array) {
