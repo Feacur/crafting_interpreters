@@ -21,10 +21,14 @@ void table_free(Table * table) {
 typedef struct Obj_String Obj_String;
 
 static Entry * find_entry(Entry * entries, uint32_t capacity, Obj_String * key) {
-	uint32_t index = key->hash % capacity;
+	// profit of the fact, that capacity is a power of 2
+	uint32_t index = key->hash & (capacity - 1);
+	// uint32_t index = key->hash % capacity;
 	Entry* empty = NULL;
 	for (uint32_t i = 0; i < capacity; i++) {
-		Entry * entry = &entries[(index + i) % capacity];
+		// profit of the fact, that capacity is a power of 2
+		Entry * entry = &entries[(index + i) & (capacity - 1)];
+		// Entry * entry = &entries[(index + i) % capacity];
 		if (entry->key == NULL) {
 			if (empty == NULL) { empty = entry; }
 			if (IS_NIL(entry->value)) { break; }
