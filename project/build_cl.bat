@@ -3,6 +3,7 @@ chcp 65001
 
 rem set debug=dummy
 rem set unity_build=dummy
+rem set dynamic_rt=dummy
 
 rem https://docs.microsoft.com/cpp/build/reference/compiler-options
 rem https://docs.microsoft.com/cpp/build/reference/linker-options
@@ -24,6 +25,12 @@ set libs=
 set warnings=-WX -W4
 set compiler=-nologo -diagnostics:caret -EHa- -GR- -Fo"./temp/"
 set linker=-nologo -WX -subsystem:console
+
+if defined dynamic_rt (
+	set compiler=%compiler% -MD
+) else (
+	set compiler=%compiler% -MT
+)
 
 if defined debug (
 	set defines=%defines% -DLOX_TARGET_DEBUG

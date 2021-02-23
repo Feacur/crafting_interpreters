@@ -14,7 +14,7 @@ rem https://docs.microsoft.com/cpp/build/reference/linker-options
 rem > PREPARE TOOLS
 set "PATH=%PATH%;C:/Program Files/LLVM/bin"
 
-if not defined auto_linking (
+if not defined unity_build (
 	set VSLANG=1033
 	pushd "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Auxiliary/Build"
 	call "vcvarsall.bat" x64
