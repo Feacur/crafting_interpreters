@@ -1,7 +1,7 @@
 @echo off
 chcp 65001
 
-set debug=dummy
+rem set debug=dummy
 rem set unity_build=dummy
 
 rem https://clang.llvm.org/docs/index.html
