@@ -55,6 +55,7 @@ static void adjust_capacity(Table * table, uint32_t capacity) {
 		entries[i].value = TO_NIL();
 	}
 
+	// @note: `table->count` remains as is
 	for (uint32_t i = 0; i < table->capacity; i++) {
 		Entry * entry = &table->entries[i];
 		if (entry->key == NULL) { continue; }
